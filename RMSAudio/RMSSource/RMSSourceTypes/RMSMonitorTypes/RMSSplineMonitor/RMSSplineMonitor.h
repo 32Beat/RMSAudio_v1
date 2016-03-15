@@ -13,6 +13,7 @@
 
 
 @interface RMSSplineMonitor : RMSSource
+- (void) resetEngine;
 - (void) getErrorData:(double *)resultPtr minValue:(double *)minValuePtr;
 
 //- (NSBitmapImageRep *) imageRepWithGain:(UInt32)a;

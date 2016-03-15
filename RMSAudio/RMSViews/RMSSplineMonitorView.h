@@ -10,10 +10,10 @@
 #import "RMSSplineMonitor.h"
 
 @interface RMSSplineMonitorView : NSView
-{
-}
 
-- (void) setErrorData:(double *)resultPtr minValue:(double)value;
-- (void) setImageRep:(NSImageRep *)imageRep;
+@property (nonatomic) RMSSplineMonitor *splineMonitor;
+
+- (double) triggerUpdate;
+//- (void) setImageRep:(NSImageRep *)imageRep;
 
 @end

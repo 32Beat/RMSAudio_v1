@@ -40,6 +40,8 @@ static double triangleWave(double x)
 static double sawToothWave(double x)
 { return x; }
 
+static double whiteNoise(double x)
+{ uint64_t r = (random()<<29)+random(); return 1.0-2.0*r/0x0FFFFFFFFFFFFFFF; }
 
 static OSStatus renderCallback(
 	void 							*inRefCon,
@@ -75,6 +77,9 @@ static OSStatus renderCallback(
 { return renderCallback; }
 
 ////////////////////////////////////////////////////////////////////////////////
+
++ (instancetype) whiteNoise
+{ return [[self alloc] initWithFrequency:0.1*M_E functionPtr:whiteNoise]; }
 
 + (instancetype) sineWaveWithFrequency:(double)f
 { return [[self alloc] initWithFrequency:f functionPtr:sineWave]; }

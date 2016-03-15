@@ -19,13 +19,26 @@
 
 @implementation RMSSplineMonitorView
 
-- (void) setErrorData:(double *)resultPtr minValue:(double)minValue
+- (void) setSplineMonitor:(RMSSplineMonitor *)splineMonitor
 {
-	memcpy(mE, resultPtr, kRMSSplineMonitorCount * sizeof(double));
-	mMinValue = minValue;
-	[self setNeedsDisplay:YES];
+	if (_splineMonitor != splineMonitor)
+	{
+		_splineMonitor = splineMonitor;
+		[self triggerUpdate];
+	}
 }
 
+- (double) triggerUpdate
+{
+	if (self.splineMonitor != nil)
+	{
+		[self.splineMonitor getErrorData:mE minValue:&mMinValue];
+		[self setNeedsDisplay:YES];
+		return mMinValue;
+	}
+	
+	return 0.5;
+}
 
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];

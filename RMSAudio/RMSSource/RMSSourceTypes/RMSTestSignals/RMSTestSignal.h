@@ -11,6 +11,8 @@
 
 @interface RMSTestSignal : RMSSource
 
++ (instancetype) whiteNoise;
+
 + (instancetype) sineWaveWithFrequency:(double)f;
 + (instancetype) blockWaveWithFrequency:(double)f;
 + (instancetype) triangleWaveWithFrequency:(double)f;
