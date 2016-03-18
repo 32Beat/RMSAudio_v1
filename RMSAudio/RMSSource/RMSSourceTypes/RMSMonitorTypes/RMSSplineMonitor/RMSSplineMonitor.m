@@ -113,10 +113,12 @@ static OSStatus renderCallback(
 	{
 		double a = N * (1.0 / (kRMSSplineMonitorCount-1));
 		
-		rmsObject->mE[N] +=
+		double E =
 		ComputeError(a, &srcPtrL[n])+
 		ComputeError(a, &srcPtrR[n]);
-
+		
+		rmsObject->mE[N] += 0.0001 * (E - rmsObject->mE[N]);
+		
 		N += 31;
 		N &= (kRMSSplineMonitorCount-1);
 	}
@@ -175,14 +177,15 @@ static OSStatus renderCallback(
 	double A1 = resultPtr[0];
 	double A2 = resultPtr[kRMSSplineMonitorCount-1];
 	double A = 0.5;
-	if (A1 < A2)
-	{
-		A = 1.0 - 1.0/(1.0+sqrt((A1-min)/(A2-min)));
-	}
-	else
 	if (A1 > A2)
 	{
 		A = 1.0/(1.0+sqrt((A2-min)/(A1-min)));
+	}
+	else
+	if (A1 < A2)
+	{
+		A = 1.0/(1.0+sqrt((A1-min)/(A2-min)));
+		A = 1.0 - A;
 	}
 
 

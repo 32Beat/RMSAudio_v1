@@ -15,159 +15,21 @@
 
 @interface RMSSpectrogram ()
 {
-	size_t mDCTCount;
-	size_t mDCTShift;
+	uint64_t mDCTCount;
+	uint64_t mDCTShift;
+	uint64_t mRowIndex;
 	
-	// sliding buffers for left and right samples
-	float *mL;
-	float *mR;
-	// write index for sliding buffer
-	size_t mDstIndex;
-
-	// working buffer
-	float *mW; // tabulated window function
+	// tabulated window function
+	float *mW;
 
 	// invariants for dct conversion
 	vDSP_DFT_Setup mDCTSetup;
-	
-	// result buffer
-	float *mSpectrumData;
-	UInt64 mSpectrumIndex;
 }
 @end
 
 
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSSpectrogram
-////////////////////////////////////////////////////////////////////////////////
-
-// Copy for sliding buffer
-static inline void _CopySamples(
-	float *srcL, float *dstL,
-	float *srcR, float *dstR, size_t n)
-{
-	while (n != 0)
-	{
-		n -= 1;
-		dstL[n] = srcL[n];
-		dstR[n] = srcR[n];
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-#pragma mark
-////////////////////////////////////////////////////////////////////////////////
-
-static OSStatus renderCallback(
-	void 							*inRefCon,
-	AudioUnitRenderActionFlags 		*actionFlags,
-	const AudioTimeStamp 			*timeStamp,
-	UInt32							busNumber,
-	UInt32							frameCount,
-	AudioBufferList 				*bufferList)
-{
-	__unsafe_unretained RMSSpectrogram *rmsObject = \
-	(__bridge __unsafe_unretained RMSSpectrogram *)inRefCon;
-	
-	// Copy incoming audio...
-	float *srcPtrL = bufferList->mBuffers[0].mData;
-	float *srcPtrR = bufferList->mBuffers[1].mData;
-	
-	// ... to sliding buffers
-	float *dstPtrL = rmsObject->mL;
-	float *dstPtrR = rmsObject->mR;
-	
-	size_t dstIndex = rmsObject->mDstIndex;
-	size_t dctCount = rmsObject->mDCTCount;
-	size_t dctShift = rmsObject->mDCTShift;
-	
-	for (size_t n=0; n!=frameCount; n++)
-	{
-		// Copy incoming audio to sliding buffers
-		dstPtrL[dstIndex] = srcPtrL[n];
-		dstPtrR[dstIndex] = srcPtrR[n];
-		dstIndex += 1;
-		
-		// If sliding buffer full, compute DCT into spectrumData
-		if (dstIndex == dctCount)
-		{
-			float *spectrumData = rmsObject->mSpectrumData;
-			UInt32 spectrumIndex = rmsObject->mSpectrumIndex & 255;
-			
-			// Move to current row
-			spectrumData += spectrumIndex << (dctShift + 1);
-
-			// Convert left signal into left side of spectrumdata
-			vDSP_vmul(rmsObject->mL, 1, rmsObject->mW, 1, spectrumData, 1, dctCount);
-			vDSP_DCT_Execute(rmsObject->mDCTSetup, spectrumData, spectrumData);
-			//vDSP_vrvrs(spectrumData, 1, dctCount);
-			
-			// Move to center of row
-			spectrumData += dctCount;
-			
-			// Convert right signal into right side of spectrumdata
-			vDSP_vmul(rmsObject->mR, 1, rmsObject->mW, 1, spectrumData, 1, dctCount);
-			vDSP_DCT_Execute(rmsObject->mDCTSetup, spectrumData, spectrumData);
-/*
-			// move back to start of row
-			spectrumData -= dctCount;
-			
-			// normalize entire row
-			const float m = sqrt(2.0 / dctCount);
-			vDSP_vsmul(spectrumData, 1, &m, spectrumData, 1, 2*dctCount);
-//*/
-/*
-			// move back to start of row
-			spectrumData -= dctCount;
-
-			long previousRow = -2*dctCount;
-			if (spectrumData == rmsObject->mSpectrumData)
-			{ previousRow += 256*2*dctCount; }
-			
-			_DCT_Mix1(&spectrumData[previousRow], spectrumData, dctCount);
-			spectrumData += dctCount;
-			_DCT_Mix2(&spectrumData[previousRow], spectrumData, dctCount);
-//*/
-
-			// Update index
-			rmsObject->mSpectrumIndex += 1;
-
-
-			// Move second half of buffer to start of buffer
-			_CopySamples(
-			&dstPtrL[dctCount/2], &dstPtrL[0],
-			&dstPtrR[dctCount/2], &dstPtrR[0], dctCount/2);
-			
-			// Reset index to refill second half of buffer
-			dstIndex = dctCount/2;
-		}
-	}
-	
-	rmsObject->mDstIndex = dstIndex;
-	
-	return noErr;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-+ (const RMSCallbackProcPtr) callbackPtr
-{ return renderCallback; }
-
-////////////////////////////////////////////////////////////////////////////////
-#pragma mark
-////////////////////////////////////////////////////////////////////////////////
-
-static inline void PrepareDCTWindow(float *W, size_t size)
-{
-	// initialize window function
-	for (UInt32 n=0; n!=size; n++)
-	{
-		float x = (1.0*n + 0.5)/size;
-		float y = sin(x*M_PI);
-		W[n] = y*y;
-	}
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 - (instancetype) init
@@ -180,45 +42,30 @@ static inline void PrepareDCTWindow(float *W, size_t size)
 	self = [super init];
 	if (self != nil)
 	{
-		mDCTShift = round(log2(N));
-		mDCTCount = 1 << mDCTShift;
-		
-		
-		// initialize sliding audio buffers
-		mL = calloc(mDCTCount, sizeof(float));
-		if (mL == nil) return nil;
-		
-		mR = calloc(mDCTCount, sizeof(float));
-		if (mR == nil) return nil;
-		
-		// initialize window buffer
-		mW = calloc(mDCTCount, sizeof(float));
-		if (mW == nil) return nil;
-
-		// initialize DCT setup
-		mDCTSetup = vDSP_DCT_CreateSetup(nil, mDCTCount, vDSP_DCT_IV);
-		if (mDCTSetup == nil) return nil;
-		
-		// initialize result buffer
-		mSpectrumData = calloc(2 * mDCTCount * 256, sizeof(float));
-		if (mSpectrumData == nil) return nil;
-		
-		
-		// populate window table
-		PrepareDCTWindow(mW, mDCTCount);
+		if ([self setLength:N])
+		{
+			return self;
+		}
 	}
 	
-	return self;
+	return nil;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 - (void) dealloc
 {
-	if (mSpectrumData != nil)
+	[self releaseInternals];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) releaseInternals
+{
+	if (mW != nil)
 	{
-		free(mSpectrumData);
-		mSpectrumData = nil;
+		free(mW);
+		mW = nil;
 	}
 	
 	if (mDCTSetup != nil)
@@ -226,23 +73,45 @@ static inline void PrepareDCTWindow(float *W, size_t size)
 		vDSP_DFT_DestroySetup(mDCTSetup);
 		mDCTSetup = nil;
 	}
+}
 
-	if (mW != nil)
+////////////////////////////////////////////////////////////////////////////////
+
+- (BOOL) setLength:(size_t)N
+{
+	if (mDCTCount != N)
 	{
-		free(mW);
-		mW = nil;
+		mDCTShift = ceil(log2(N));
+		mDCTCount = 1 << mDCTShift;
+		mRowIndex = 0;
+		
+		[self releaseInternals];
+
+		// initialize DCT setup
+		mDCTSetup = vDSP_DCT_CreateSetup(nil, mDCTCount, vDSP_DCT_IV);
+		if (mDCTSetup == nil) return NO;
+		
+		// initialize window ptr
+		mW = calloc(mDCTCount, sizeof(float));
+		if (mW == nil) return NO;
+		
+		// populate window table
+		[self prepareDCTWindow];
 	}
 	
-	if (mL != nil)
+	return YES;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) prepareDCTWindow
+{
+	// initialize window function
+	for (int n=0; n!=mDCTCount; n++)
 	{
-		free(mL);
-		mL = nil;
-	}
-	
-	if (mR != nil)
-	{
-		free(mR);
-		mR = nil;
+		float x = (1.0*n + 0.5)/mDCTCount;
+		float y = sin(x*M_PI);
+		mW[n] = y*y;
 	}
 }
 
@@ -299,87 +168,68 @@ static inline void DCT_ValueToColor(float A, float V, UInt32 *dstPtr)
 
 static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 {
-	float *srcPtrL = srcPtr-1;
-	float *srcPtrR = srcPtr+n;
-	// Move to center of image
-	dstPtr += n;
-	
 	while (n != 0)
 	{
-		DCT_ValueToColor(A, srcPtrL[n], &dstPtr[-n]);
 		n -= 1;
-		DCT_ValueToColor(A, srcPtrR[n], &dstPtr[+n]);
+		DCT_ValueToColor(A, srcPtr[n], &dstPtr[n]);
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
-/*
-	imageRep
-	--------
-	This creates a bitmap imagerep of the internal spectrum buffer
-	The internal buffer is continuously being used by the audiothread
-	which may become visible when drawing the full image
-	
-	Useful for testing purposes
-	
-	For normal display purposes use imageRepWithIndex instead
-*/
-- (NSBitmapImageRep *) imageRep
+
+- (NSBitmapImageRep *) spectrumImageWithGain:(UInt32)a
 {
-	return [[NSBitmapImageRep alloc]
-		initWithBitmapDataPlanes:(Byte **)&mSpectrumData
-		pixelsWide:mDCTCount * 2
-		pixelsHigh:256
-		bitsPerSample:32
-		samplesPerPixel:1
-		hasAlpha:NO
-		isPlanar:NO
-		colorSpaceName:NSCalibratedWhiteColorSpace
-		bitmapFormat:NSFloatingPointSamplesBitmapFormat
-		bytesPerRow:2 * mDCTCount * sizeof(float)
-		bitsPerPixel:8 * sizeof(float)];
-}
+	uint64_t maxSampleCount = _sampleMonitor.maxIndex + 1;
 
-////////////////////////////////////////////////////////////////////////////////
-/*
-	imageRepWithIndex
-	-----------------
-	creates an imageRep from a particular sliding step index.
-	mSpectrumIndex is the index of the row being computed by the audiothread, 
-	so the bitmap will be based on the rows from index to mSpectrumIndex (ex)
-*/
+	// need at least one row of sample data
+	if (maxSampleCount < mDCTCount)
+	{ return nil; }
 
-- (NSBitmapImageRep *) imageRepWithIndex:(UInt64)index
-{ return [self imageRepWithIndex:index gain:0]; }
+	// count overlapping rows
+	uint64_t maxRowCount = (maxSampleCount >> (mDCTShift-1)) - 1;
 
-- (NSBitmapImageRep *) imageRepWithIndex:(UInt64)index gain:(UInt32)a
-{
-	// Keep reasonable margin 
-	if (index < (mSpectrumIndex - 128))
-	{ index = mSpectrumIndex - 128; }
+	// compute next image range
+	uint64_t rowIndex = mRowIndex;
+	uint64_t rowCount = maxRowCount - rowIndex;
 	
-	if (index < mSpectrumIndex)
+	// rowIndex == 0 indicates new spectrogram controller
+	// rowIndex >= maxRowCount indicates new sampleMonitor
+	if ((rowIndex == 0)||(rowIndex >= maxRowCount))
 	{
-		NSRange R = { index&255, mSpectrumIndex-index };
-		return [self imageRepWithRange:R gain:a];
+		rowIndex = maxRowCount-1;
+		rowCount = 1;
 	}
 
-	return nil;
+	// limit number of imagerows to something reasonable
+	if (rowCount > 128)
+	{
+		rowIndex = maxRowCount-128;
+		rowCount = 128;
+		NSLog(@"RMSSpectrogram rowcount > 128: %llu", rowCount);
+	}
+	
+	// store next rowindex
+	mRowIndex = maxRowCount;
+	
+	// return image
+	return [self imageRepWithRange:(NSRange){ rowIndex, rowCount } gain:a];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (NSBitmapImageRep *) imageRepWithRange:(NSRange)range
-{ return [self imageRepWithRange:range gain:0]; }
+- (NSBitmapImageRep *) imageRepFromIndex:(size_t)rowIndex gain:(UInt32)a
+{ return [self imageRepWithRange:(NSRange){ rowIndex, 0 } gain:a]; }
 
-- (NSBitmapImageRep *) imageRepWithRange:(NSRange)range gain:(UInt32)a
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBitmapImageRep *) imageRepWithRange:(NSRange)rangeY gain:(UInt32)a
 {
 	NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc]
 		initWithBitmapDataPlanes:nil
 		pixelsWide:mDCTCount * 2
-		pixelsHigh:range.length
+		pixelsHigh:rangeY.length
 		bitsPerSample:8
 		samplesPerPixel:4
 		hasAlpha:YES
@@ -389,28 +239,31 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 		bytesPerRow:mDCTCount * 2 * 4 * sizeof(Byte)
 		bitsPerPixel:8 * 4 * sizeof(Byte)];
 
-	float *srcPtr = mSpectrumData;
-	UInt32 *dstPtr = (UInt32 *)bitmap.bitmapData;
-	
-	// spectrum data is appended downward
-	srcPtr += 2 * mDCTCount * (range.location&=255);
-	// image data needs to be copied bottom to top
-	dstPtr += 2 * mDCTCount * (range.length-1);
-	
+	float *dstPtr = (float *)bitmap.bitmapData;
+
 	float A = pow(10.0, a);
-	
-	for (UInt32 n=0; n!=range.length; n++)
+
+	uint64_t sampleCount = (rangeY.location + rangeY.length + 1)<<(mDCTShift-1);
+	NSRange R = { sampleCount-mDCTCount, mDCTCount };
+
+	for (UInt32 n=0; n!=rangeY.length; n++)
 	{
-		_DCT_to_Image(A, srcPtr, dstPtr, mDCTCount);
-		srcPtr += 2*mDCTCount;
-		dstPtr -= 2*mDCTCount;
+		[_sampleMonitor getSamplesL:dstPtr withRange:R];
+		vDSP_vmul(dstPtr, 1, mW, 1, dstPtr, 1, mDCTCount);
+		vDSP_DCT_Execute(mDCTSetup, dstPtr, dstPtr);
+		vDSP_vrvrs(dstPtr, 1, mDCTCount);
+		_DCT_to_Image(A, dstPtr, (UInt32 *)dstPtr, mDCTCount);
+
+		dstPtr += mDCTCount;
 		
-		range.location += 1;
-		if (range.location == 256)
-		{
-			srcPtr = mSpectrumData;
-			range.location = 0;
-		}
+		[_sampleMonitor getSamplesR:dstPtr withRange:R];
+		vDSP_vmul(dstPtr, 1, mW, 1, dstPtr, 1, mDCTCount);
+		vDSP_DCT_Execute(mDCTSetup, dstPtr, dstPtr);
+		_DCT_to_Image(A, dstPtr, (UInt32 *)dstPtr, mDCTCount);
+
+		dstPtr += mDCTCount;
+		
+		R.location -= R.length>>1;
 	}
 	
 	return bitmap;

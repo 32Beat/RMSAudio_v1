@@ -43,17 +43,25 @@
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];
     
-    // Drawing code here.
-	NSRect B = self.bounds;
 	
 	[[NSColor whiteColor] set];
-	NSRectFill(B);
+	NSRectFill(self.bounds);
 	
-	[[NSColor darkGrayColor] set];
+	[self drawGraph:NSInsetRect(self.bounds, 1, 1)];
+	
+	[[NSColor blackColor] set];
+	NSFrameRect(self.bounds);
+}
+
+
+
+- (void) drawGraph:(NSRect)B
+{
+	[[NSColor grayColor] set];
 
 	NSBezierPath *path = [NSBezierPath new];
 	
-	float x = B.origin.x;
+	float x = NSMinX(B);
 	float xstep = B.size.width / (kRMSSplineMonitorCount-1);
 	[path moveToPoint:(NSPoint){ x, mE[0]*B.size.height }];
 	for (long n=1; n!=kRMSSplineMonitorCount; n++)
@@ -65,7 +73,7 @@
 
 	[[NSColor redColor] set];
 	[path removeAllPoints];
-	float X1 = NSMinX(B)+B.size.width * mMinValue;
+	float X1 = NSMinX(B)+floor(B.size.width * mMinValue)+.5;
 	float X2 = X1;
 	float Y1 = NSMinY(B);
 	float Y2 = NSMaxY(B);
@@ -73,8 +81,7 @@
 	[path lineToPoint:(NSPoint){ X2, Y2 }];
 	[path stroke];
 	
-	[[NSColor blackColor] set];
-	NSFrameRect(self.bounds);
 }
+
 
 @end

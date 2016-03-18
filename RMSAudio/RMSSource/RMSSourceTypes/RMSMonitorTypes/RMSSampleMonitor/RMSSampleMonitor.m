@@ -67,7 +67,7 @@ static OSStatus renderCallback(
 	self = [super init];
 	if (self != nil)
 	{
-		sampleCount = 1<<(int)(round(log2(sampleCount)));
+		sampleCount = 1<<(int)ceil(log2(sampleCount));
 		
 		mCount = sampleCount;
 		mBufferL = RMSBufferBegin(sampleCount);
@@ -87,17 +87,70 @@ static OSStatus renderCallback(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (size_t) getSamples:(float **)dstPtr count:(size_t)count
+- (uint64_t) maxIndex
 {
 	uint64_t indexL = mBufferL.index;
 	uint64_t indexR = mBufferR.index;
-	uint64_t index = indexL < indexR ? indexL : indexR;
+	return indexL < indexR ? indexL : indexR;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (uint64_t) maxCount
+{
+	return mCount;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (BOOL) getSamples:(float **)dstPtr count:(size_t)count
+{
+	uint64_t index = self.maxIndex;
+
+	if (count > mCount)
+	{ count = mCount; }
 	
-	index -= count;
-	RMSBufferReadSamplesFromIndex(&mBufferL, index, dstPtr[0], count);
-	RMSBufferReadSamplesFromIndex(&mBufferR, index, dstPtr[1], count);
+	NSRange R = { index - count, count };
+	return [self getSamples:dstPtr withRange:R];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (BOOL) getSamples:(float **)dstPtr withRange:(NSRange)R
+{
+	uint64_t maxIndex = self.maxIndex;
+	uint64_t minIndex = maxIndex > mCount ? maxIndex - mCount : 0;
 	
-	return count;
+	if ((minIndex <= R.location)&&((R.location+R.length) <= maxIndex))
+	{
+		uint64_t index = R.location;
+		uint64_t count = R.length;
+
+		RMSBufferReadSamplesFromIndex(&mBufferL, index, dstPtr[0], count);
+		RMSBufferReadSamplesFromIndex(&mBufferR, index, dstPtr[1], count);
+
+		return YES;
+	}
+	
+	return NO;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) getSamplesL:(float *)dstPtr withRange:(NSRange)R
+{
+	uint64_t index = R.location;
+	uint64_t count = R.length;
+	RMSBufferReadSamplesFromIndex(&mBufferL, index, dstPtr, count);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) getSamplesR:(float *)dstPtr withRange:(NSRange)R
+{
+	uint64_t index = R.location;
+	uint64_t count = R.length;
+	RMSBufferReadSamplesFromIndex(&mBufferR, index, dstPtr, count);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

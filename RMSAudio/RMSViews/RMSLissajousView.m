@@ -342,13 +342,11 @@ NSBezierPath *NSBezierPathWithCircle(NSPoint P, float R)
 - (void) drawPath:(NSBezierPath *)path
 {
 	NSRect B = self.bounds;
-	CGFloat S = 0.5 * MIN(B.size.width, B.size.height);
+	CGFloat S = 0.707 * 0.5 * MIN(B.size.width, B.size.height);
 	
 	NSAffineTransform *T = [NSAffineTransform transform];
-//	[T translateXBy:B.size.width/2.0 yBy:B.size.height/2.0];
 	[T scaleBy:S];
-//	[T rotateByDegrees:45.0];
-	
+
 	[[T transformBezierPath:path] stroke];
 }
 
