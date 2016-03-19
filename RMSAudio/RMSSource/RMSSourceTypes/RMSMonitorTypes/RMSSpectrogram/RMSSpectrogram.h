@@ -23,7 +23,6 @@
 
 @property (nonatomic) RMSSampleMonitor *sampleMonitor;
 
-- (instancetype) initWithLength:(size_t)N;
 - (BOOL) setLength:(size_t)N;
 
 - (NSBitmapImageRep *) spectrumImageWithGain:(UInt32)a;

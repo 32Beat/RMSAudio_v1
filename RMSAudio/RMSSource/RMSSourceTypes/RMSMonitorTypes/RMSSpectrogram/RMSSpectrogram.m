@@ -25,6 +25,8 @@
 	// invariants for dct conversion
 	vDSP_DFT_Setup mDCTSetup;
 }
+
+
 @end
 
 
@@ -209,18 +211,13 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 		rowCount = 128;
 		NSLog(@"RMSSpectrogram rowcount > 128: %llu", rowCount);
 	}
-	
+		
 	// store next rowindex
 	mRowIndex = maxRowCount;
 	
 	// return image
 	return [self imageRepWithRange:(NSRange){ rowIndex, rowCount } gain:a];
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (NSBitmapImageRep *) imageRepFromIndex:(size_t)rowIndex gain:(UInt32)a
-{ return [self imageRepWithRange:(NSRange){ rowIndex, 0 } gain:a]; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -243,10 +240,13 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 
 	float A = pow(10.0, a);
 
+	// compute sampleCount corresponding to total rowCount
 	uint64_t sampleCount = (rangeY.location + rangeY.length + 1)<<(mDCTShift-1);
+	// compute samplerange for final row
 	NSRange R = { sampleCount-mDCTCount, mDCTCount };
 
-	for (UInt32 n=0; n!=rangeY.length; n++)
+	// loop down to first row
+	for (NSUInteger n=rangeY.length; n!=0; n--)
 	{
 		[_sampleMonitor getSamplesL:dstPtr withRange:R];
 		vDSP_vmul(dstPtr, 1, mW, 1, dstPtr, 1, mDCTCount);
@@ -263,6 +263,7 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 
 		dstPtr += mDCTCount;
 		
+		// move back half a row for overlap
 		R.location -= R.length>>1;
 	}
 	
