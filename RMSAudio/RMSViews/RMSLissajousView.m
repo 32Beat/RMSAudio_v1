@@ -15,8 +15,6 @@ float gSINn[kRMSLissajousAngleCount];
 
 @interface RMSLissajousView ()
 {
-	BOOL mPendingUpdate;
-	
 	uint64_t mIndex;
 	uint64_t mCount;
 	float mL[kRMSLissajousCount];
@@ -132,23 +130,7 @@ double computeAvg(float *srcPtr, size_t n)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) triggerUpdate
-{
-	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
-	if (sampleMonitor != nil)
-	{
-		if (!mPendingUpdate)
-		{
-			mPendingUpdate = YES;
-			dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-			^{ [self updateInfo:sampleMonitor]; });
-		}
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) updateInfo:(RMSSampleMonitor *)sampleMonitor
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	float *ptr[2] = { mL, mR };
 	
@@ -162,12 +144,6 @@ double computeAvg(float *srcPtr, size_t n)
 	[self updatePhasePath];
 	//[self updateAnglePath];
 	[self updateCorrelation];
-
-	dispatch_async(dispatch_get_main_queue(),
-	^{
-		[self setNeedsDisplay:YES];
-		mPendingUpdate = NO;
-	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -7,19 +7,16 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import "RMSSampleMonitor.h"
+#import "RMSSampleMonitorView.h"
 
 
 #define kRMSLissajousCount 	(1<<12)
 
 
-@interface RMSLissajousView : NSView
-
-@property (nonatomic, weak) RMSSampleMonitor *sampleMonitor;
+@interface RMSLissajousView : RMSSampleMonitorView
 
 - (float) correlationValue;
 - (void) setFilter:(float)value;
 - (void) setDuration:(float)value;
-- (void) triggerUpdate;
 
 @end

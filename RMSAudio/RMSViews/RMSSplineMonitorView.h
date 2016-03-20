@@ -7,13 +7,15 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "RMSSampleMonitorView.h"
 #import "RMSSplineMonitor.h"
 
-@interface RMSSplineMonitorView : NSView
+@interface RMSSplineMonitorView : RMSSampleMonitorView
 
 @property (nonatomic) RMSSplineMonitor *splineMonitor;
 
-- (double) triggerUpdate;
+- (float) minValue;
+
 //- (void) setImageRep:(NSImageRep *)imageRep;
 
 @end

@@ -9,7 +9,7 @@
 
 #import "RMSSource.h"
 
-#define kRMSSplineMonitorCount 	32
+
 
 
 @interface RMSSplineMonitor : RMSSource

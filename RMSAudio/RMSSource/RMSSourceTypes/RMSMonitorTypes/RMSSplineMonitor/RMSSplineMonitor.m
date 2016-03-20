@@ -13,7 +13,7 @@
 
 
 
-
+static const int kRMSSplineMonitorCount = 8;
 
 @interface RMSSplineMonitor ()
 {
