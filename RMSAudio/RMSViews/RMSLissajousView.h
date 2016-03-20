@@ -17,6 +17,7 @@
 
 @property (nonatomic, weak) RMSSampleMonitor *sampleMonitor;
 
+- (float) correlationValue;
 - (void) setFilter:(float)value;
 - (void) setDuration:(float)value;
 - (void) triggerUpdate;

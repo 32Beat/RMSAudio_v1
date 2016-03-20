@@ -9,11 +9,16 @@
 #import "RMSLissajousView.h"
 #import <Accelerate/Accelerate.h>
 
-#define kRMSLissajousAngleCount 8
+#define kRMSLissajousAngleCount 16
+float gCOSn[kRMSLissajousAngleCount];
+float gSINn[kRMSLissajousAngleCount];
 
 @interface RMSLissajousView ()
 {
-	size_t mCount;
+	BOOL mPendingUpdate;
+	
+	uint64_t mIndex;
+	uint64_t mCount;
 	float mL[kRMSLissajousCount];
 	float mR[kRMSLissajousCount];
 	
@@ -21,13 +26,19 @@
 	float mLf;
 	float mRf;
 	
+	
 	double mQ[4];
 	
-	float mCOSn[kRMSLissajousAngleCount];
-	float mSINn[kRMSLissajousAngleCount];
-	
 	float mA[kRMSLissajousAngleCount];
+	
+	
+	
 }
+
+@property (nonatomic, assign) float correlation;
+@property (atomic) NSBezierPath *phasePath;
+@property (atomic) NSBezierPath *anglePath;
+
 @end
 
 
@@ -36,6 +47,23 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSLissajousView
+////////////////////////////////////////////////////////////////////////////////
+
++ (void) initialize
+{
+	for(int n=0; n!=kRMSLissajousAngleCount; n++)
+	{
+		double a = M_PI * (-1.0 + 2.0 * n / kRMSLissajousAngleCount);
+		gCOSn[n] = cos(a);
+		gSINn[n] = sin(a);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (float)correlationValue
+{ return self.correlation; }
+
 ////////////////////////////////////////////////////////////////////////////////
 
 - (void) setFilter:(float)value
@@ -54,7 +82,7 @@
 - (void) setCount:(size_t)count
 {
 	if (count == 0)
-	{ count = 1; }
+	{ count = 4; }
 	
 	if (mCount != count)
 	{
@@ -109,30 +137,124 @@ double computeAvg(float *srcPtr, size_t n)
 	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
 	if (sampleMonitor != nil)
 	{
-		float *ptr[2] = { mL, mR };
-		
-		if (mCount == 0)
-		{ mCount = 1; }
-		
-		[sampleMonitor getSamples:ptr count:mCount];
-
-		//[self prepareSamples];
-		
-		[self setNeedsDisplay:YES];
+		if (!mPendingUpdate)
+		{
+			mPendingUpdate = YES;
+			dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+			^{ [self updateInfo:sampleMonitor]; });
+		}
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) initAngles
+- (void) updateInfo:(RMSSampleMonitor *)sampleMonitor
 {
-	for(int n=0; n!=kRMSLissajousAngleCount; n++)
-	{
-		double a = M_PI * (-1.0 + 2.0 * n / kRMSLissajousAngleCount);
-		mCOSn[n] = cos(a);
-		mSINn[n] = sin(a);
-	}
+	float *ptr[2] = { mL, mR };
+	
+	if (mCount == 0)
+	{ mCount = 256; }
+	
+	// TODO: getsamples with range and step,
+	// for better distribution over elapsed time
+	
+	[sampleMonitor getSamples:ptr count:mCount];
+	[self updatePhasePath];
+	//[self updateAnglePath];
+	[self updateCorrelation];
+
+	dispatch_async(dispatch_get_main_queue(),
+	^{
+		[self setNeedsDisplay:YES];
+		mPendingUpdate = NO;
+	});
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updatePhasePath
+{
+	NSBezierPath *path = [NSBezierPath new];
+	
+//	if (mGraphType == kRMSLissajousGraphTypeStar)
+//*
+	for (int n=0; n!=mCount; n++)
+	{
+		[path moveToPoint:NSZeroPoint];
+		[path lineToPoint:[self pointAtIndex:n]];
+	}
+/*/
+	[path moveToPoint:[self pointAtIndex:0]];
+	for (int n=1; n!=mCount; n++)
+	{ [path lineToPoint:[self pointAtIndex:n]]; }
+//*/
+	self.phasePath = path;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateAnglePath
+{
+	float A[kRMSLissajousAngleCount];
+	for (int n=0; n!=kRMSLissajousAngleCount; n++)
+	{ A[n] = 0; }
+
+	for (int n=0; n!=mCount; n++)
+	{
+		double L = mL[n];
+		double R = mR[n];
+		
+		double a = atan2(L, R) * (1.0 / M_PI);
+		if (a < 0.0) a += 1.0;
+		if (a > 0.5) a -= 1.0;
+		a += 0.5;
+		
+		int i = round(kRMSLissajousAngleCount*a);
+		if (i >= kRMSLissajousAngleCount)
+		{ i = 0; }
+		A[i] += 1;
+	}
+	
+	float N = 10;
+	vDSP_vavlin(A, 1, &N, mA, 1, kRMSLissajousAngleCount);
+	
+	
+	NSPoint P[kRMSLissajousAngleCount];
+	for (int n=0; n!=kRMSLissajousAngleCount; n++)
+	{
+		double d = mA[n] / mCount;
+		
+		d = pow(d, .2);
+		P[n].x = d * gCOSn[n];
+		P[n].y = d * gSINn[n];
+	}
+	
+	NSBezierPath *path = [NSBezierPath new];
+	[path moveToPoint:P[kRMSLissajousAngleCount-1]];
+	for (int n=0; n!=kRMSLissajousAngleCount; n++)
+	[path lineToPoint:P[n]];
+	self.anglePath = path;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateCorrelation
+{
+	float sum = 0.0;
+	float sumL = 0.0;
+	float sumR = 0.0;
+	
+	vDSP_dotpr(mL, 1, mR, 1, &sum, mCount);
+	vDSP_svesq(mL, 1, &sumL, mCount);
+	vDSP_svesq(mR, 1, &sumR, mCount);
+	
+	if (sumL > 0.0 && sumR > 0.0)
+	sum /= sqrt(sumL*sumR);
+	
+	self.correlation += 0.05 * (sum - self.correlation);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 - (void) updateQ:(NSPoint)P
 {
@@ -161,12 +283,13 @@ double computeAvg(float *srcPtr, size_t n)
 	double L = mL[n];
 	double R = mR[n];
 	
+/*	
 	mLf += mFilterValue * (L - mLf);
 	mRf += mFilterValue * (R - mRf);
 	
 	L = mLf;
 	R = mRf;
-	
+*/	
 	double d = sqrt(0.5 * (L*L+R*R));
 	d = d > 0.0 ? 0.5 * pow(d, 0.5)/d : 0.5;
 	L *= d;
@@ -183,9 +306,10 @@ double computeAvg(float *srcPtr, size_t n)
 	
 	[self adjustOrigin];
 
-    // Drawing code here.
+	
 	[[NSColor darkGrayColor] set];
 	NSRectFill(self.bounds);
+
 	
 	[[NSColor blackColor] set];
 	NSBezierPath *path = [NSBezierPath new];
@@ -195,28 +319,25 @@ double computeAvg(float *srcPtr, size_t n)
 	[path lineToPoint:(NSPoint){ NSMaxX(self.bounds), 0.0 }];
 	[self drawPath:path];
 	
-	if (mCount == 0)
-	{	mCount = 1; [self initAngles]; }
-
 
 	[HSB(60.0, 0.25, 1.0) set];
+	[self drawPath:self.phasePath];
 
-	path = [NSBezierPath new];
-/*
-	[path moveToPoint:[self pointAtIndex:0]];
-	for (int n=1; n!=mCount; n++)
-	{ [path lineToPoint:[self pointAtIndex:n]]; }
+	[HSB(240.0, 0.5, 1.0) set];
+//	[self drawPath:self.anglePath];
+	
+	// draw correlation
+	float C = self.correlation;
 
-/*/
-	for (int n=0; n!=mCount; n++)
-	{
-		[path moveToPoint:NSZeroPoint];
-		[path lineToPoint:[self pointAtIndex:n]];
-	}
-//*/
+	[[NSColor redColor] set];
+	[path removeAllPoints];
+	[path moveToPoint:(NSPoint){ -1.0, C }];
+	[path lineToPoint:(NSPoint){ +1.0, C }];
 	[self drawPath:path];
 
 
+
+/*
 	mQ[0] = 0;
 	mQ[1] = 0;
 	mQ[2] = 0;
@@ -233,13 +354,14 @@ double computeAvg(float *srcPtr, size_t n)
 	{
 		[[NSColor redColor] set];
 		[path removeAllPoints];
-		[path moveToPoint:(NSPoint){ +mQ[0]/S, +mQ[0]/S }];
-		[path lineToPoint:(NSPoint){ -mQ[1]/S, +mQ[1]/S }];
-		[path lineToPoint:(NSPoint){ -mQ[2]/S, -mQ[2]/S }];
-		[path lineToPoint:(NSPoint){ +mQ[3]/S, -mQ[3]/S }];
+		[path moveToPoint:(NSPoint){ 0.0, +mQ[0]/S }];
+		[path lineToPoint:(NSPoint){ -mQ[1]/S, 0.0 }];
+		[path lineToPoint:(NSPoint){ 0.0, -mQ[2]/S }];
+		[path lineToPoint:(NSPoint){ +mQ[3]/S, 0.0 }];
 		[path closePath];
 		[self drawPath:path];
 	}
+*/
 /*
 	float A[kRMSLissajousAngleCount];
 	for (int n=0; n!=kRMSLissajousAngleCount; n++)
@@ -271,11 +393,11 @@ double computeAvg(float *srcPtr, size_t n)
 		double d = mA[n] / mCount;
 		
 		d = pow(d, .2);
-		P[n].x = d * mCosN[n];
-		P[n].y = d * mSinN[n];
+		P[n].x = d * mCOSn[n];
+		P[n].y = d * mSINn[n];
 	}
 	
-	[HSB(60.0, 0.25, 1.0) set];
+	[HSB(240.0, 0.25, 1.0) set];
 	path = [NSBezierPath new];
 	[path moveToPoint:P[kRMSLissajousAngleCount-1]];
 	for (int n=0; n!=kRMSLissajousAngleCount; n++)
@@ -347,7 +469,8 @@ NSBezierPath *NSBezierPathWithCircle(NSPoint P, float R)
 	NSAffineTransform *T = [NSAffineTransform transform];
 	[T scaleBy:S];
 
-	[[T transformBezierPath:path] stroke];
+	if (path != nil)
+	{ [[T transformBezierPath:path] stroke]; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

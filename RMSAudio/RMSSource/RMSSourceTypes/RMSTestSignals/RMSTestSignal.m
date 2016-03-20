@@ -41,7 +41,11 @@ static double sawToothWave(double x)
 { return x; }
 
 static double whiteNoise(double x)
-{ uint64_t r = (random()<<29)+random(); return 1.0-2.0*r/0x0FFFFFFFFFFFFFFF; }
+{
+	uint64_t r = (random()<<29)+random();
+	r &= 0x0FFFFFFFFFFFFFFF;
+	return 1.0-2.0*r/0x0FFFFFFFFFFFFFFF;
+}
 
 static OSStatus renderCallback(
 	void 							*inRefCon,

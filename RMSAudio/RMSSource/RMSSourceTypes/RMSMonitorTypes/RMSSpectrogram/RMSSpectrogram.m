@@ -35,7 +35,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 - (instancetype) init
-{ return [self initWithLength:256]; }
+{ return [self initWithLength:2048]; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -233,8 +233,8 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 		isPlanar:NO
 		colorSpaceName:NSCalibratedRGBColorSpace
 		bitmapFormat:0
-		bytesPerRow:mDCTCount * 2 * 4 * sizeof(Byte)
-		bitsPerPixel:8 * 4 * sizeof(Byte)];
+		bytesPerRow:sizeof(UInt32) * 2 * mDCTCount
+		bitsPerPixel:sizeof(UInt32) * 8];
 
 	float *dstPtr = (float *)bitmap.bitmapData;
 

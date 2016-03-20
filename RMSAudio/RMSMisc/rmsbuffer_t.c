@@ -114,7 +114,8 @@ void RMSBufferWriteSamples(rmsbuffer_t *bufferPtr, float *srcPtr, size_t N)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void RMSBufferReadSamplesFromIndex(rmsbuffer_t *bufferPtr, uint64_t index, float *dstPtr, size_t N)
+void RMSBufferReadSamplesFromIndex
+(rmsbuffer_t *bufferPtr, uint64_t index, float *dstPtr, size_t N)
 {
 	if (bufferPtr && bufferPtr->sampleData)
 	{
