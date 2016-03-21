@@ -32,14 +32,19 @@
 		if (!mPendingUpdate)
 		{
 			mPendingUpdate = YES;
+			
+			[self willUpdateWithSampleMonitor:sampleMonitor];
 			dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
 			^{
 				[self updateWithSampleMonitor:sampleMonitor];
 				dispatch_async(dispatch_get_main_queue(),
 				^{
+					[self didUpdateWithSampleMonitor:sampleMonitor];
+					
 					if (blockPtr != nil)
 					{ blockPtr(); }
 					[self setNeedsDisplay:YES];
+					
 					mPendingUpdate = NO;
 				});
 			});
@@ -49,9 +54,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+- (void) willUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
+}
+
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	
+}
+
+- (void) didUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -39,9 +39,10 @@ FOUNDATION_EXPORT const unsigned char RMSAudioVersionString[];
 #import <RMSAudio/RMSMonitor.h>
 #import <RMSAudio/RMSSpectrogram.h>
 #import <RMSAudio/RMSSplineMonitor.h>
-#import <RMSAudio/RMSSplineMonitorView.h>
 #import <RMSAudio/RMSSampleMonitor.h>
+#import <RMSAudio/RMSSplineMonitorView.h>
 #import <RMSAudio/RMSLissajousView.h>
+#import <RMSAudio/RMSSpectrumView.h>
 
 #import <RMSAudio/RMSMixer.h>
 #import <RMSAudio/RMSMixerSource.h>
@@ -50,7 +51,9 @@ FOUNDATION_EXPORT const unsigned char RMSAudioVersionString[];
 #import <RMSAudio/RMSClip.h>
 
 #import <RMSAudio/RMSTimer.h>
+#import <RMSAudio/RMSIndexView.h>
 #import <RMSAudio/RMSStereoView.h>
+#import <RMSAudio/RMSBalanceView.h>
 
 
 CF_ENUM(AudioFormatFlags)

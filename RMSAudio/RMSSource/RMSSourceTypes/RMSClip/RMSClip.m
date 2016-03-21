@@ -15,8 +15,8 @@
 	float *mL;
 	float *mR;
 	
-	UInt32 mIndex;
-	UInt32 mCount;
+	size_t mIndex;
+	size_t mCount;
 }
 
 @end
@@ -44,7 +44,7 @@ static OSStatus renderCallback(
 	float *dstPtrR = bufferList->mBuffers[1].mData;
 	
 	
-	UInt32 srcIndex = rmsObject->mIndex;
+	size_t srcIndex = rmsObject->mIndex;
 
 	for (UInt32 n=0; n!=frameCount; n++)
 	{
@@ -152,7 +152,7 @@ static OSStatus renderCallback(
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
-- (UInt32) sampleCount
+- (size_t) sampleCount
 { return mCount; }
 
 - (float *) mutablePtrL

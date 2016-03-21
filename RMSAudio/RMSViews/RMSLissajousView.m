@@ -34,6 +34,8 @@ float gSINn[kRMSLissajousAngleCount];
 }
 
 @property (nonatomic, assign) float correlation;
+@property (nonatomic, assign) float correlationL;
+@property (nonatomic, assign) float correlationR;
 @property (atomic) NSBezierPath *phasePath;
 @property (atomic) NSBezierPath *anglePath;
 
@@ -224,6 +226,12 @@ double computeAvg(float *srcPtr, size_t n)
 	vDSP_svesq(mL, 1, &sumL, mCount);
 	vDSP_svesq(mR, 1, &sumR, mCount);
 	
+	if (sumR > 0.0)
+	{ self.correlationL += 0.05 * ((sum / sumR) - self.correlationL); }
+
+	if (sumL > 0.0)
+	{ self.correlationR += 0.05 * ((sum / sumL) - self.correlationR); }
+	
 	if (sumL > 0.0 && sumR > 0.0)
 	sum /= sqrt(sumL*sumR);
 	
@@ -310,6 +318,15 @@ double computeAvg(float *srcPtr, size_t n)
 	[path moveToPoint:(NSPoint){ -1.0, C }];
 	[path lineToPoint:(NSPoint){ +1.0, C }];
 	[self drawPath:path];
+
+	float CL = self.correlationL;
+	float CR = self.correlationR;
+	float a = atan2(CL, CR)+0.25*M_PI;
+	[path removeAllPoints];
+	[path moveToPoint:(NSPoint){ 0.0, 0.0 }];
+	[path lineToPoint:(NSPoint){ cos(a), sin(a) }];
+	[self drawPath:path];
+
 
 
 

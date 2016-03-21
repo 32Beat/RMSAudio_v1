@@ -124,6 +124,7 @@ static void DivideByTotalVolume(AudioBufferList *bufferList, float V1, float V2,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/*
 static OSStatus weightedMix(
 	void 							*inRefCon,
 	AudioUnitRenderActionFlags 		*actionFlags,
@@ -183,7 +184,7 @@ static OSStatus weightedMix(
 	
 	return result;
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////
 /*
 	Note: AudioUnits may adjust the AudioBufferList, 

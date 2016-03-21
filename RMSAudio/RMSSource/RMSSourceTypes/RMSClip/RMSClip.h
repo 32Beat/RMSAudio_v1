@@ -15,7 +15,7 @@
 + (instancetype) blockWaveWithLength:(UInt64)N;
 - (instancetype) initWithLength:(UInt64)size;
 
-- (UInt32) sampleCount;
+- (size_t) sampleCount;
 - (float *) mutablePtrL;
 - (float *) mutablePtrR;
 

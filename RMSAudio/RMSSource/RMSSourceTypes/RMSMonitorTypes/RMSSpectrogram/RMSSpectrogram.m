@@ -11,8 +11,6 @@
 #import <Accelerate/Accelerate.h>
 
 
-
-
 @interface RMSSpectrogram ()
 {
 	uint64_t mDCTCount;
@@ -26,7 +24,6 @@
 	vDSP_DFT_Setup mDCTSetup;
 }
 
-
 @end
 
 
@@ -34,18 +31,17 @@
 @implementation RMSSpectrogram
 ////////////////////////////////////////////////////////////////////////////////
 
-- (instancetype) init
-{ return [self initWithLength:2048]; }
++ (instancetype) instanceWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{ return [[self alloc] initWithSize:(size_t)N sampleMonitor:sampleMonitor]; }
 
-////////////////////////////////////////////////////////////////////////////////
-
-- (instancetype) initWithLength:(size_t)N
+- (instancetype) initWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	self = [super init];
 	if (self != nil)
 	{
-		if ([self setLength:N])
+		if ([self setSize:N])
 		{
+			_sampleMonitor = sampleMonitor;
 			return self;
 		}
 	}
@@ -57,48 +53,59 @@
 
 - (void) dealloc
 {
-	[self releaseInternals];
+	[self releaseMemory];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) releaseInternals
+- (BOOL) prepareMemory
 {
 	if (mW != nil)
-	{
-		free(mW);
-		mW = nil;
-	}
+	{ free(mW); }
+	
+	mW = [self createDCTWindowWithLength:mDCTCount];
+	if (mW == nil) return NO;
 	
 	if (mDCTSetup != nil)
-	{
-		vDSP_DFT_DestroySetup(mDCTSetup);
-		mDCTSetup = nil;
-	}
+	{ vDSP_DFT_DestroySetup(mDCTSetup); }
+	
+	mDCTSetup = vDSP_DCT_CreateSetup(nil, mDCTCount, vDSP_DCT_IV);
+	if (mDCTSetup == nil) return NO;
+	
+	return YES;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (BOOL) setLength:(size_t)N
+- (void) releaseMemory
 {
-	if (mDCTCount != N)
+	mDCTShift = 0;
+	mDCTCount = 0;
+	mRowIndex = 0;
+
+	if (mW != nil)
+	{ free(mW); mW = nil; }
+	
+	if (mDCTSetup != nil)
+	{ vDSP_DFT_DestroySetup(mDCTSetup); mDCTSetup = nil; }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (size_t) size
+{ return mDCTCount; }
+
+- (BOOL) setSize:(size_t)N
+{
+	N = ceil(log2(N));
+
+	if (mDCTShift != N)
 	{
-		mDCTShift = ceil(log2(N));
-		mDCTCount = 1 << mDCTShift;
+		mDCTShift = N;
+		mDCTCount = 1 << N;
 		mRowIndex = 0;
 		
-		[self releaseInternals];
-
-		// initialize DCT setup
-		mDCTSetup = vDSP_DCT_CreateSetup(nil, mDCTCount, vDSP_DCT_IV);
-		if (mDCTSetup == nil) return NO;
-		
-		// initialize window ptr
-		mW = calloc(mDCTCount, sizeof(float));
-		if (mW == nil) return NO;
-		
-		// populate window table
-		[self prepareDCTWindow];
+		return [self prepareMemory];
 	}
 	
 	return YES;
@@ -106,15 +113,19 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) prepareDCTWindow
+- (float *) createDCTWindowWithLength:(size_t)N
 {
+	float *dstPtr = calloc(N, sizeof(float));
+	
 	// initialize window function
-	for (int n=0; n!=mDCTCount; n++)
+	for (long n=0; n!=N; n++)
 	{
-		float x = (1.0*n + 0.5)/mDCTCount;
+		float x = (1.0*n + 0.5)/N;
 		float y = sin(x*M_PI);
-		mW[n] = y*y;
+		dstPtr[n] = y*y;
 	}
+	
+	return dstPtr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -124,7 +135,7 @@
 static inline UInt32 RGBAColorMake(UInt32 R, UInt32 G, UInt32 B)
 { return (255<<24)+(B<<16)+(G<<8)+(R<<0); }
 
-static inline void DCT_ValueToColor(float A, float V, UInt32 *dstPtr)
+static inline UInt32 SpectrumColorMake(float A, float V)
 {
 #define CMX 255.0
 
@@ -164,26 +175,48 @@ static inline void DCT_ValueToColor(float A, float V, UInt32 *dstPtr)
 		B += r * (colorSpectrum[n+1][2] - B);
 	}
 	
-	dstPtr[0] = RGBAColorMake(R+0.5, G+0.5, B+0.5);
+	return RGBAColorMake(R+0.5, G+0.5, B+0.5);
 }
 
 
-static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
+static inline void ConvertToSpectrumColors(float A, float *srcPtr, UInt32 *dstPtr, long n)
 {
 	while (n != 0)
 	{
 		n -= 1;
-		DCT_ValueToColor(A, srcPtr[n], &dstPtr[n]);
+		dstPtr[n] = SpectrumColorMake(A, srcPtr[n]);
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A)
+{
+	float *srcPtr = (float *)bitmap.bitmapData;
+	UInt32 *dstPtr = (UInt32 *)bitmap.bitmapData;
+	
+	ConvertToSpectrumColors(A, srcPtr, dstPtr, bitmap.pixelsHigh * bitmap.pixelsWide);
+/*
+	long nextRow = bitmap.bytesPerRow / sizeof(UInt32);
+	
+	for (NSUInteger n=bitmap.pixelsHigh; n!=0; n++)
+	{
+		_DCT_to_Image(A, srcPtr, dstPtr, bitmap.pixelsWide);
+		srcPtr += nextRow;
+		dstPtr += nextRow;
+	}
+*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
-- (NSBitmapImageRep *) spectrumImageWithGain:(UInt32)a
+- (NSBitmapImageRep *) spectrumImageWithGain:(size_t)a
 {
-	uint64_t maxSampleCount = _sampleMonitor.maxIndex + 1;
+	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
+	
+	uint64_t maxSampleCount = sampleMonitor.maxIndex + 1;
 
 	// need at least one row of sample data
 	if (maxSampleCount < mDCTCount)
@@ -216,12 +249,14 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 	mRowIndex = maxRowCount;
 	
 	// return image
-	return [self imageRepWithRange:(NSRange){ rowIndex, rowCount } gain:a];
+	return [self imageWithSampleMonitor:sampleMonitor
+	range:(NSRange){ rowIndex, rowCount } gain:a];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (NSBitmapImageRep *) imageRepWithRange:(NSRange)rangeY gain:(UInt32)a
+- (NSBitmapImageRep *) imageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+	range:(NSRange)rangeY gain:(size_t)a
 {
 	NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc]
 		initWithBitmapDataPlanes:nil
@@ -238,34 +273,39 @@ static inline void _DCT_to_Image(float A, float *srcPtr, UInt32 *dstPtr, long n)
 
 	float *dstPtr = (float *)bitmap.bitmapData;
 
-	float A = pow(10.0, a);
-
 	// compute sampleCount corresponding to total rowCount
 	uint64_t sampleCount = (rangeY.location + rangeY.length + 1)<<(mDCTShift-1);
 	// compute samplerange for final row
 	NSRange R = { sampleCount-mDCTCount, mDCTCount };
 
+	float scale = 10.0 * sqrt(2.0/mDCTCount);
+
 	// loop down to first row
 	for (NSUInteger n=rangeY.length; n!=0; n--)
 	{
-		[_sampleMonitor getSamplesL:dstPtr withRange:R];
+		[sampleMonitor getSamplesL:dstPtr withRange:R];
 		vDSP_vmul(dstPtr, 1, mW, 1, dstPtr, 1, mDCTCount);
 		vDSP_DCT_Execute(mDCTSetup, dstPtr, dstPtr);
+		vDSP_vsmul(dstPtr, 1, &scale, dstPtr, 1, mDCTCount);
 		vDSP_vrvrs(dstPtr, 1, mDCTCount);
-		_DCT_to_Image(A, dstPtr, (UInt32 *)dstPtr, mDCTCount);
 
 		dstPtr += mDCTCount;
 		
-		[_sampleMonitor getSamplesR:dstPtr withRange:R];
+		[sampleMonitor getSamplesR:dstPtr withRange:R];
 		vDSP_vmul(dstPtr, 1, mW, 1, dstPtr, 1, mDCTCount);
 		vDSP_DCT_Execute(mDCTSetup, dstPtr, dstPtr);
-		_DCT_to_Image(A, dstPtr, (UInt32 *)dstPtr, mDCTCount);
-
+		vDSP_vsmul(dstPtr, 1, &scale, dstPtr, 1, mDCTCount);
+		
 		dstPtr += mDCTCount;
 		
 		// move back half a row for overlap
 		R.location -= R.length>>1;
 	}
+	
+	float A = pow(10.0, a);
+
+	ConvertToSpectrumColors(A, (float *)bitmap.bitmapData, (UInt32 *)bitmap.bitmapData, \
+	bitmap.pixelsHigh * bitmap.pixelsWide);
 	
 	return bitmap;
 }
@@ -310,10 +350,8 @@ NSBitmapImageRep *NSBitmapImageRepWithSize(size_t W, size_t H)
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
-static void _Copy32f(float *srcPtr, float *dstPtr, UInt32 n)
-{
-	memcpy(dstPtr, srcPtr, n*sizeof(float));
-}
+static void _Copy32f(float *srcPtr, float *dstPtr, size_t n)
+{ memcpy(dstPtr, srcPtr, n*sizeof(float)); }
 
 + (RMSClip *) computeSampleBufferUsingImage:(NSImage *)image
 {

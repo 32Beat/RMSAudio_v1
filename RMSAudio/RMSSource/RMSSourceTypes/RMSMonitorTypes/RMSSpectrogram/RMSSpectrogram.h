@@ -21,11 +21,15 @@
 
 @interface RMSSpectrogram : NSObject
 
-@property (nonatomic) RMSSampleMonitor *sampleMonitor;
+@property (atomic) RMSSampleMonitor *sampleMonitor;
 
-- (BOOL) setLength:(size_t)N;
++ (instancetype) instanceWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor;
+- (instancetype) initWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
-- (NSBitmapImageRep *) spectrumImageWithGain:(UInt32)a;
+- (size_t) size;
+- (BOOL) setSize:(size_t)N;
+
+- (NSBitmapImageRep *) spectrumImageWithGain:(size_t)a;
 
 + (RMSClip *) computeSampleBufferUsingImage:(NSImage *)image;
 

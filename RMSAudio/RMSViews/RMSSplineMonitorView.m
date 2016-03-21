@@ -89,13 +89,13 @@ static double Interpolate
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-static double FetchSample_(float *srcPtr)
+/*
+static double FetchSample(float *srcPtr)
 { return srcPtr[0]; }
-
+/*/
 static double FetchSample(float *srcPtr)
 { return srcPtr[0]+srcPtr[1]+srcPtr[1]+srcPtr[2]; }
-
+//*/
 ////////////////////////////////////////////////////////////////////////////////
 
 static double ComputeError(double a, float *srcPtr)
