@@ -240,9 +240,9 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 	// limit number of imagerows to something reasonable
 	if (rowCount > 128)
 	{
+		NSLog(@"RMSSpectrogram rowcount > 128: %llu", rowCount);
 		rowIndex = maxRowCount-128;
 		rowCount = 128;
-		NSLog(@"RMSSpectrogram rowcount > 128: %llu", rowCount);
 	}
 		
 	// store next rowindex

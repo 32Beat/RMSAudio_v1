@@ -13,7 +13,7 @@
 		7F8BF9E61C9F0BC80064F2EE /* RMSSpectrumView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BF9E41C9F0BC80064F2EE /* RMSSpectrumView.m */; };
 		7F90E8B81C922801008B8D75 /* RMSAudio.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F90E8B71C922801008B8D75 /* RMSAudio.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F90E9261C922B8B008B8D75 /* rmsbuffer_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 7F90E8BF1C922B8B008B8D75 /* rmsbuffer_t.c */; };
-		7F90E9271C922B8B008B8D75 /* rmsbuffer_t.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F90E8C01C922B8B008B8D75 /* rmsbuffer_t.h */; };
+		7F90E9271C922B8B008B8D75 /* rmsbuffer_t.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F90E8C01C922B8B008B8D75 /* rmsbuffer_t.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F90E9281C922B8B008B8D75 /* rmsdelay_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 7F90E8C11C922B8B008B8D75 /* rmsdelay_t.c */; };
 		7F90E9291C922B8B008B8D75 /* rmsdelay_t.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F90E8C21C922B8B008B8D75 /* rmsdelay_t.h */; };
 		7F90E92A1C922B8B008B8D75 /* rmslevels.c in Sources */ = {isa = PBXBuildFile; fileRef = 7F90E8C31C922B8B008B8D75 /* rmslevels.c */; };

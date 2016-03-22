@@ -39,7 +39,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
+	Following three calls are guaranteed to run consecutively & non-concurrently 
+	willUpdateWith... will be run on main
+	updateWith... will be run in background
+	didUpdateWith... will be run on main.
+	
+*/
 - (void) willUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	if (mLength == 0)
@@ -53,10 +59,14 @@
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	self.imagePtr = [mSpectrogram spectrumImageWithGain:mGain];
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 - (void) didUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {

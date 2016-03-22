@@ -8,12 +8,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #import "RMSSource.h"
+#import "RMSSampleMonitor.h"
 #import "rmslevels.h"
 
 @interface RMSMonitor : RMSSource
 
 + (instancetype) instanceWithSampleRate:(Float64)sampleRate;
 - (instancetype) initWithSampleRate:(Float64)sampleRate;
+
+- (void) processSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
 - (const rmsengine_t *) enginePtrL;
 - (const rmsengine_t *) enginePtrR;

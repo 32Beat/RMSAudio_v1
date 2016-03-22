@@ -36,6 +36,15 @@ float gSINn[kRMSLissajousAngleCount];
 @property (nonatomic, assign) float correlation;
 @property (nonatomic, assign) float correlationL;
 @property (nonatomic, assign) float correlationR;
+
+/*
+	Following need to be atomic since a redraw may be triggered 
+	by the system while the background process runs
+	
+	Alternatively, we might create an internal transfer ivar, 
+	since "didUpdateWithSampleMonitor:" and "redraw:" will 
+	never be called concurrently.
+*/
 @property (atomic) NSBezierPath *phasePath;
 @property (atomic) NSBezierPath *anglePath;
 

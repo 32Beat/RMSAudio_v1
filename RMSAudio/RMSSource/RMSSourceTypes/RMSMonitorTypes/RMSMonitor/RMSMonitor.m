@@ -12,6 +12,8 @@
 
 @interface RMSMonitor ()
 {
+	uint64_t mIndex;
+	
 	Float64 mEngineRate;
 	rmsengine_t mEngineL;
 	rmsengine_t mEngineR;
@@ -80,6 +82,50 @@ static OSStatus renderCallback(
 	}
 	
 	return self;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) processSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
+	// (re)initialize engines if necessary
+	Float64 sampleRate = self.sampleRate;
+	if (mEngineRate != sampleRate)
+	{
+		mEngineRate = sampleRate;
+		mEngineL = RMSEngineInit(sampleRate);
+		mEngineR = RMSEngineInit(sampleRate);
+	}
+
+
+	uint64_t index = mIndex;
+	uint64_t maxIndex = sampleMonitor.maxIndex;
+	
+	if (index > maxIndex)
+	{ index = maxIndex; }
+	
+	uint64_t count = maxIndex+1 - index;
+	uint64_t maxCount = sampleMonitor.length >> 1;
+	
+	if (count > maxCount)
+	{
+		count = maxCount;
+		index = maxIndex - count;
+	}
+
+	rmsbuffer_t *bufferL = [sampleMonitor bufferAtIndex:0];
+	rmsbuffer_t *bufferR = [sampleMonitor bufferAtIndex:1];
+
+	for (int n=0; n!=count; n++)
+	{
+		float L = RMSBufferGetSampleAtIndex(bufferL, index);
+		RMSEngineAddSample(&mEngineL, L);
+		float R = RMSBufferGetSampleAtIndex(bufferR, index);
+		RMSEngineAddSample(&mEngineR, R);
+		index++;
+	}
+	
+	mIndex = index;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

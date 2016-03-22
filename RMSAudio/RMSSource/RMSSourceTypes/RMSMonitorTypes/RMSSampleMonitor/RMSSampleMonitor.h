@@ -9,6 +9,7 @@
 
 
 #import "RMSSource.h"
+#import "rmsbuffer_t.h"
 
 /*
 	RMSSampleMonitor is a simple ringbuffer monitor which can be used by 
@@ -24,12 +25,14 @@
 + (instancetype) instanceWithCount:(size_t)sampleCount;
 - (instancetype) initWithCount:(size_t)sampleCount;
 
+- (size_t) length;
 - (uint64_t) maxIndex;
-- (uint64_t) maxCount;
 
 - (BOOL) getSamples:(float **)dstPtr count:(size_t)count;
 - (BOOL) getSamples:(float **)dstPtr withRange:(NSRange)R;
 - (void) getSamplesL:(float *)dstPtr withRange:(NSRange)R;
 - (void) getSamplesR:(float *)dstPtr withRange:(NSRange)R;
+
+- (rmsbuffer_t *) bufferAtIndex:(int)n;
 
 @end
