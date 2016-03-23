@@ -291,7 +291,15 @@ double computeAvg(float *srcPtr, size_t n)
 	return (NSPoint){ R-L, R+L };
 }
 
-
+- (void) updateData:(RMSPhaseMonitor *)phaseMonitor
+{
+	self.resultPath = phaseMonitor.resultPath;
+	self.correlation = phaseMonitor.correlation;
+	self.correlationL = phaseMonitor.correlationL;
+	self.correlationR = phaseMonitor.correlationR;
+	
+	[self setNeedsDisplay:YES];
+}
 
 - (void)drawRect:(NSRect)dirtyRect
 {
@@ -314,7 +322,7 @@ double computeAvg(float *srcPtr, size_t n)
 	
 
 	[HSB(60.0, 0.25, 1.0) set];
-	[self drawPath:self.phasePath];
+	[self drawPath:self.resultPath];
 
 	[HSB(240.0, 0.5, 1.0) set];
 //	[self drawPath:self.anglePath];

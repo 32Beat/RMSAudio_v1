@@ -37,6 +37,30 @@
 @implementation RMSSplineMonitor
 ////////////////////////////////////////////////////////////////////////////////
 
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
+	if (mResetEngine == YES)
+	{
+		mResetEngine = NO;
+		vDSP_vclrD(mE, 1, kRMSSplineErrorCount);
+		mN = 0;
+	}
+	
+	uint64_t maxSampleCount = sampleMonitor.maxIndex+1;
+	if (maxSampleCount >= kRMSSplineMonitorCount)
+	{
+		NSRange R = { maxSampleCount - kRMSSplineMonitorCount, kRMSSplineMonitorCount };
+		[sampleMonitor getSamplesL:mT withRange:R];
+		[self testSamples:mT];
+		[sampleMonitor getSamplesR:mT withRange:R];
+		[self testSamples:mT];
+		
+		[self updateStats];
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 static double Bezier
 (double x, double P1, double C1, double C2, double P2)
 {
@@ -138,30 +162,6 @@ static double ComputeError(double a, float *srcPtr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
-{
-	if (mResetEngine == YES)
-	{
-		mResetEngine = NO;
-		vDSP_vclrD(mE, 1, kRMSSplineErrorCount);
-		mN = 0;
-	}
-	
-	uint64_t maxSampleCount = sampleMonitor.maxIndex+1;
-	if (maxSampleCount >= kRMSSplineMonitorCount)
-	{
-		NSRange R = { maxSampleCount - kRMSSplineMonitorCount, kRMSSplineMonitorCount };
-		[sampleMonitor getSamplesL:mT withRange:R];
-		[self testSamples:mT];
-		[sampleMonitor getSamplesR:mT withRange:R];
-		[self testSamples:mT];
-		
-		[self updateStats];
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 - (const double *) errorPtr
 { return mE; }
 
@@ -170,125 +170,8 @@ static double ComputeError(double a, float *srcPtr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static OSStatus renderCallback(
-	void 							*inRefCon,
-	AudioUnitRenderActionFlags 		*actionFlags,
-	const AudioTimeStamp 			*timeStamp,
-	UInt32							busNumber,
-	UInt32							frameCount,
-	AudioBufferList 				*bufferList)
-{
-	__unsafe_unretained RMSSplineMonitor *rmsObject = \
-	(__bridge __unsafe_unretained RMSSplineMonitor *)inRefCon;
-	
-	if (rmsObject->mResetEngine == YES)
-	{
-		vDSP_vclrD(rmsObject->mE, 1, kRMSSplineMonitorCount);
-		rmsObject->mResetEngine = NO;
-	}
-
-
-	float *srcPtrL = bufferList->mBuffers[0].mData;
-	float *srcPtrR = bufferList->mBuffers[1].mData;
-	
-	UInt64 N = rmsObject->mN;
-	
-	for (int n=0; n!=frameCount-16; n++)
-	{
-		double a = N * (1.0 / (kRMSSplineMonitorCount-1));
-		
-		double E =
-		ComputeError(a, &srcPtrL[n])+
-		ComputeError(a, &srcPtrR[n]);
-		
-		rmsObject->mE[N] += 0.0001 * (E - rmsObject->mE[N]);
-		
-		N += 31;
-		N &= (kRMSSplineMonitorCount-1);
-	}
-	
-	rmsObject->mN = N;
-	
-	return noErr;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-+ (const RMSCallbackProcPtr) callbackPtr
-{ return renderCallback; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (instancetype) init
-{
-	self = [super init];
-	if (self != nil)
-	{
-	}
-	
-	return self;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) dealloc
-{
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 - (void) resetEngine
 { mResetEngine = YES; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) getErrorData:(double *)resultPtr minValue:(double *)minValuePtr
-{
-	memcpy(resultPtr, mE, kRMSSplineMonitorCount * sizeof(double));
-	
-	double min = resultPtr[0];
-	double max = resultPtr[0];
-	
-	for (long n=1; n!=kRMSSplineMonitorCount; n++)
-	{
-		if (min > resultPtr[n])
-		{ min = resultPtr[n]; }
-		else
-		if (max < resultPtr[n])
-		{ max = resultPtr[n]; }
-	}
-
-	double A1 = resultPtr[0];
-	double A2 = resultPtr[kRMSSplineMonitorCount-1];
-	double A = 0.5;
-	if (A1 > A2)
-	{
-		A = 1.0/(1.0+sqrt((A2-min)/(A1-min)));
-	}
-	else
-	if (A1 < A2)
-	{
-		A = 1.0/(1.0+sqrt((A1-min)/(A2-min)));
-		A = 1.0 - A;
-	}
-
-
-//*
-	if (max > min)
-	{
-		for (long n=0; n!=kRMSSplineMonitorCount; n++)
-		{
-			resultPtr[n] /= max;
-		}
-	}
-//*/
-
-
-//	double A = A1 < A2 ? 1.0 - 1.0/(1.0+sqrt(A1)) : 1.0/(1.0+sqrt(A2));
-
-	if (minValuePtr != nil)
-	*minValuePtr = A;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 

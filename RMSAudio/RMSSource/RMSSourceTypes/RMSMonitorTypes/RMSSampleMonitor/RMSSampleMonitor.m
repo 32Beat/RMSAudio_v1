@@ -101,6 +101,16 @@ static OSStatus renderCallback(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+- (NSRange) availableRange
+{
+	uint64_t maxIndex = self.maxIndex;
+	uint64_t maxCount = self.length >> 1;
+	
+	return (NSRange){ maxIndex-maxCount, maxCount };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 - (NSRange) availableRangeWithIndex:(uint64_t)index
 {
 	uint64_t maxIndex = self.maxIndex;

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7F247D051CA2CC860086F21B /* RMSPhaseMonitor.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */; };
+		7F247D051CA2CC860086F21B /* RMSPhaseMonitor.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F247D061CA2CC860086F21B /* RMSPhaseMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */; };
 		7F8BF9E11C9EF8AF0064F2EE /* RMSSampleMonitorView.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F8BF9DF1C9EF8AF0064F2EE /* RMSSampleMonitorView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F8BF9E21C9EF8AF0064F2EE /* RMSSampleMonitorView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BF9E01C9EF8AF0064F2EE /* RMSSampleMonitorView.m */; };

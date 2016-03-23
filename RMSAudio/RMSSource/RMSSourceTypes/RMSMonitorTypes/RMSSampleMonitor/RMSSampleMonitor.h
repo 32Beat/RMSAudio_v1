@@ -41,6 +41,8 @@
 
 - (size_t) length;
 - (uint64_t) maxIndex;
+
+- (NSRange) availableRange;
 - (NSRange) availableRangeWithIndex:(uint64_t)index;
 
 - (BOOL) getSamples:(float **)dstPtr count:(size_t)count;

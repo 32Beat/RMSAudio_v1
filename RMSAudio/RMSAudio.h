@@ -37,9 +37,11 @@ FOUNDATION_EXPORT const unsigned char RMSAudioVersionString[];
 #import <RMSAudio/RMSFlanger.h>
 
 #import <RMSAudio/RMSMonitor.h>
-#import <RMSAudio/RMSSpectrogram.h>
-#import <RMSAudio/RMSSplineMonitor.h>
 #import <RMSAudio/RMSSampleMonitor.h>
+#import <RMSAudio/RMSSplineMonitor.h>
+#import <RMSAudio/RMSPhaseMonitor.h>
+#import <RMSAudio/RMSSpectrogram.h>
+
 #import <RMSAudio/RMSSplineMonitorView.h>
 #import <RMSAudio/RMSLissajousView.h>
 #import <RMSAudio/RMSSpectrumView.h>

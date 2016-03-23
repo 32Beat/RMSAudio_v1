@@ -16,7 +16,13 @@
 @interface RMSPhaseMonitor : NSObject
 <RMSSampleMonitorObserverProtocol>
 
+@property (nonatomic, assign) float correlation;
+@property (nonatomic, assign) float correlationL;
+@property (nonatomic, assign) float correlationR;
+
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
+
+- (NSBezierPath *) resultPath;
 
 
 @end
