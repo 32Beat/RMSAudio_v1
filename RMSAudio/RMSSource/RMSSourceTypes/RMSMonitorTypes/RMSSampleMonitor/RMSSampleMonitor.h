@@ -20,13 +20,28 @@
 	for the largest possible demand. 
 */
 
+@class RMSSampleMonitor;
+
+@protocol RMSSampleMonitorObserverProtocol <NSObject>
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
+@end
+
+@protocol RMSSampleMonitorDelegateProtocol <NSObject>
+- (void) sampleMonitor:(RMSSampleMonitor *)sampleMonitor
+	didUpdateObserver:(id)observer;
+@end
+
+
 @interface RMSSampleMonitor : RMSSource
+
+@property (nonatomic, weak) id delegate;
 
 + (instancetype) instanceWithCount:(size_t)sampleCount;
 - (instancetype) initWithCount:(size_t)sampleCount;
 
 - (size_t) length;
 - (uint64_t) maxIndex;
+- (NSRange) availableRangeWithIndex:(uint64_t)index;
 
 - (BOOL) getSamples:(float **)dstPtr count:(size_t)count;
 - (BOOL) getSamples:(float **)dstPtr withRange:(NSRange)R;
@@ -34,5 +49,9 @@
 - (void) getSamplesR:(float *)dstPtr withRange:(NSRange)R;
 
 - (rmsbuffer_t *) bufferAtIndex:(int)n;
+
+- (void) addObserver:(id<RMSSampleMonitorObserverProtocol>)observer;
+- (void) removeObserver:(id<RMSSampleMonitorObserverProtocol>)observer;
+- (void) updateObservers;
 
 @end

@@ -12,15 +12,13 @@
 #import <Accelerate/Accelerate.h>
 
 
-
-
-
-
 @interface RMSSampleMonitor ()
 {
 	size_t mCount;
 	rmsbuffer_t mBufferL;
 	rmsbuffer_t mBufferR;
+	
+	NSMutableArray *mObservers;
 }
 @end
 
@@ -103,6 +101,28 @@ static OSStatus renderCallback(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+- (NSRange) availableRangeWithIndex:(uint64_t)index
+{
+	uint64_t maxIndex = self.maxIndex;
+	
+	if (index == 0 || index > maxIndex)
+	{ index = maxIndex; }
+	
+	uint64_t count = maxIndex + 1 - index;
+	uint64_t maxCount = self.length >> 1;
+
+	if (count > maxCount)
+	{
+		index += count;
+		index -= maxCount;
+		count = maxCount;
+	}
+	
+	return (NSRange){ index, count };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 - (BOOL) getSamples:(float **)dstPtr count:(size_t)count
 {
 	uint64_t index = self.maxIndex;
@@ -158,6 +178,41 @@ static OSStatus renderCallback(
 - (rmsbuffer_t *) bufferAtIndex:(int)n
 {
 	return n ? &mBufferR : &mBufferL;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) addObserver:(id<RMSSampleMonitorObserverProtocol>)observer
+{
+	if (mObservers == nil)
+	{ mObservers = [NSMutableArray new]; }
+	
+	if (observer &&
+	[observer respondsToSelector:@selector(updateWithSampleMonitor:)])
+	{ [mObservers addObject:observer]; }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) removeObserver:(id)observer
+{
+	[mObservers removeObjectIdenticalTo:observer];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateObservers
+{
+	for(id object in mObservers)
+	{
+		[object updateWithSampleMonitor:self];
+		if ([self.delegate respondsToSelector:
+			@selector(sampleMonitor:didUpdateObserver:)])
+		{ [self.delegate sampleMonitor:self didUpdateObserver:object]; }
+	}
+//	[mObservers makeObjectsPerformSelector:@selector(updateWithSampleMonitor:) withObject:self];
 }
 
 ////////////////////////////////////////////////////////////////////////////////

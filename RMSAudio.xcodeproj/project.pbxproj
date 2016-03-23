@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7F247D051CA2CC860086F21B /* RMSPhaseMonitor.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */; };
+		7F247D061CA2CC860086F21B /* RMSPhaseMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */; };
 		7F8BF9E11C9EF8AF0064F2EE /* RMSSampleMonitorView.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F8BF9DF1C9EF8AF0064F2EE /* RMSSampleMonitorView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F8BF9E21C9EF8AF0064F2EE /* RMSSampleMonitorView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BF9E01C9EF8AF0064F2EE /* RMSSampleMonitorView.m */; };
 		7F8BF9E51C9F0BC80064F2EE /* RMSSpectrumView.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F8BF9E31C9F0BC80064F2EE /* RMSSpectrumView.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -96,6 +98,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSPhaseMonitor.h; sourceTree = "<group>"; };
+		7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RMSPhaseMonitor.m; sourceTree = "<group>"; };
 		7F8BF9DF1C9EF8AF0064F2EE /* RMSSampleMonitorView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSSampleMonitorView.h; sourceTree = "<group>"; };
 		7F8BF9E01C9EF8AF0064F2EE /* RMSSampleMonitorView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RMSSampleMonitorView.m; sourceTree = "<group>"; };
 		7F8BF9E31C9F0BC80064F2EE /* RMSSpectrumView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSSpectrumView.h; sourceTree = "<group>"; };
@@ -197,6 +201,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7F247D021CA2CC860086F21B /* RMSPhaseMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */,
+				7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */,
+			);
+			path = RMSPhaseMonitor;
+			sourceTree = "<group>";
+		};
 		7F90E8AA1C922801008B8D75 = {
 			isa = PBXGroup;
 			children = (
@@ -407,6 +420,7 @@
 				7F90E9051C922B8B008B8D75 /* RMSSampleMonitor */,
 				7F90E9081C922B8B008B8D75 /* RMSSpectrogram */,
 				7F90E90B1C922B8B008B8D75 /* RMSSplineMonitor */,
+				7F247D021CA2CC860086F21B /* RMSPhaseMonitor */,
 			);
 			path = RMSMonitorTypes;
 			sourceTree = "<group>";
@@ -504,6 +518,7 @@
 				7F90E93E1C922B8B008B8D75 /* RMSAudioUnitVarispeed.h in Headers */,
 				7F90E9321C922B8B008B8D75 /* RMSCallback.h in Headers */,
 				7F90E9731C922B8B008B8D75 /* RMSStereoView.h in Headers */,
+				7F247D051CA2CC860086F21B /* RMSPhaseMonitor.h in Headers */,
 				7F90E9671C922B8B008B8D75 /* PCMAudioUtilities.h in Headers */,
 				7F90E93C1C922B8B008B8D75 /* RMSAudioUnitPlatformIO.h in Headers */,
 				7F90E96B1C922B8B008B8D75 /* RMSBalanceView.h in Headers */,
@@ -617,6 +632,7 @@
 				7F90E9431C922B8B008B8D75 /* RMSOutput.m in Sources */,
 				7F90E9491C922B8B008B8D75 /* RMSDelay.m in Sources */,
 				7F90E9281C922B8B008B8D75 /* rmsdelay_t.c in Sources */,
+				7F247D061CA2CC860086F21B /* RMSPhaseMonitor.m in Sources */,
 				7F90E93D1C922B8B008B8D75 /* RMSAudioUnitPlatformIO.m in Sources */,
 				7F90E96A1C922B8B008B8D75 /* RMSAudioUtilities.m in Sources */,
 				7F90E95C1C922B8B008B8D75 /* RMSMonitor.m in Sources */,

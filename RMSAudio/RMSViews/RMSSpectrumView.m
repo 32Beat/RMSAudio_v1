@@ -39,6 +39,20 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
+
+- (void) triggerUpdate
+{
+	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
+	if (sampleMonitor != nil)
+	{
+		[self willUpdateWithSampleMonitor:sampleMonitor];
+		[self updateWithSampleMonitor:sampleMonitor];
+		[self didUpdateWithSampleMonitor:sampleMonitor];
+		[self setNeedsDisplay:YES];
+	}
+}
+
+
 /*
 	Following three calls are guaranteed to run consecutively & non-concurrently 
 	willUpdateWith... will be run on main
@@ -51,11 +65,10 @@
 	if (mLength == 0)
 	{ mLength = 2048; }
 	
-	if (mSpectrogram.size != mLength)
+	if (mSpectrogram.length != mLength)
 	{
-		mSpectrogram = [RMSSpectrogram instanceWithSize:mLength
-		sampleMonitor:sampleMonitor];
-		mLength = mSpectrogram.size;
+		mSpectrogram = [RMSSpectrogram instanceWithLength:mLength];
+		mLength = mSpectrogram.length;
 	}
 }
 
@@ -63,7 +76,7 @@
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	self.imagePtr = [mSpectrogram spectrumImageWithGain:mGain];
+	self.imagePtr = [mSpectrogram spectrumImageWithSampleMonitor:sampleMonitor gain:mGain];
 }
 
 ////////////////////////////////////////////////////////////////////////////////

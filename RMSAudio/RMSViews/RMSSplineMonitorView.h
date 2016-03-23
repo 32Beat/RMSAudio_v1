@@ -10,12 +10,8 @@
 #import "RMSSampleMonitorView.h"
 #import "RMSSplineMonitor.h"
 
-@interface RMSSplineMonitorView : RMSSampleMonitorView
+@interface RMSSplineMonitorView : NSView
 
-@property (nonatomic) RMSSplineMonitor *splineMonitor;
-
-- (float) minValue;
-
-//- (void) setImageRep:(NSImageRep *)imageRep;
+- (void) updateData:(RMSSplineMonitor *)splineMonitor;
 
 @end

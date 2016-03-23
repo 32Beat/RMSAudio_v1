@@ -7,8 +7,8 @@
 */
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef rmslevels_h
-#define rmslevels_h
+#ifndef rmslevels_t_h
+#define rmslevels_t_h
 
 #include <stddef.h>
 #include <stdint.h>

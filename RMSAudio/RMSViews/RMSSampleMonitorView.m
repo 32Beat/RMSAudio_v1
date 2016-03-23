@@ -20,7 +20,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 - (void) triggerUpdate
-{ return [self triggerUpdateWithFinishBlock:nil]; }
+{
+	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
+	if (sampleMonitor != nil)
+	{
+		[self willUpdateWithSampleMonitor:sampleMonitor];
+		[self updateWithSampleMonitor:sampleMonitor];
+		[self didUpdateWithSampleMonitor:sampleMonitor];
+		[self setNeedsDisplay:YES];
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

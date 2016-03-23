@@ -11,19 +11,21 @@
 #import <Accelerate/Accelerate.h>
 
 
+// Number of testsamples
+#define kRMSSplineMonitorCount 	2048
 
+// Number of error bins
+#define kRMSSplineErrorCount 	32
 
-static const int kRMSSplineMonitorCount = 8;
 
 @interface RMSSplineMonitor ()
 {
-	double mE[kRMSSplineMonitorCount];
+	double mE[kRMSSplineErrorCount];
+	float mT[kRMSSplineMonitorCount];
 	
-	
-	double mE0;
-	double mE1;
-	
-	double mMinValue;
+	double mMaxE;
+	double mMinE;
+	double mMinResult;
 
 	UInt64 mN;
 	BOOL mResetEngine;
@@ -83,6 +85,88 @@ static double ComputeError(double a, float *srcPtr)
 
 	return E*E;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) testSamples:(float *)srcPtr
+{
+	for (int n=0; n!=kRMSSplineMonitorCount-8; n++)
+	{
+		double a = mN * (1.0 / (kRMSSplineErrorCount-1));
+		
+		double E = ComputeError(a, &srcPtr[n]);
+		
+		mE[mN] += 0.0001 * (E - mE[mN]);
+		
+		mN += 31;
+		mN &= (kRMSSplineErrorCount-1);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateStats
+{
+	double min = mE[0];
+	double max = mE[0];
+	
+	for (int n=1; n!=kRMSSplineErrorCount; n++)
+	{
+		if (min > mE[n]) min = mE[n];
+		if (max < mE[n]) max = mE[n];
+	}
+	
+	mMinE = min;
+	mMaxE = max;
+
+	double A1 = mE[0];
+	double A2 = mE[kRMSSplineErrorCount-1];
+	double A = 0.5;
+	if (A1 > A2)
+	{
+		A = 1.0/(1.0+sqrt((A2-min)/(A1-min)));
+	}
+	else
+	if (A1 < A2)
+	{
+		A = 1.0/(1.0+sqrt((A1-min)/(A2-min)));
+		A = 1.0 - A;
+	}
+	
+	mMinResult = A;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
+	if (mResetEngine == YES)
+	{
+		mResetEngine = NO;
+		vDSP_vclrD(mE, 1, kRMSSplineErrorCount);
+		mN = 0;
+	}
+	
+	uint64_t maxSampleCount = sampleMonitor.maxIndex+1;
+	if (maxSampleCount >= kRMSSplineMonitorCount)
+	{
+		NSRange R = { maxSampleCount - kRMSSplineMonitorCount, kRMSSplineMonitorCount };
+		[sampleMonitor getSamplesL:mT withRange:R];
+		[self testSamples:mT];
+		[sampleMonitor getSamplesR:mT withRange:R];
+		[self testSamples:mT];
+		
+		[self updateStats];
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (const double *) errorPtr
+{ return mE; }
+
+- (double) minResult
+{ return mMinResult; }
 
 ////////////////////////////////////////////////////////////////////////////////
 

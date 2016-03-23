@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSMonitor
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 static OSStatus renderCallback(
 	void 							*inRefCon,
 	AudioUnitRenderActionFlags 		*actionFlags,
@@ -67,29 +67,13 @@ static OSStatus renderCallback(
 
 + (const RMSCallbackProcPtr) callbackPtr
 { return renderCallback; }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////
 
-+ (instancetype) instanceWithSampleRate:(Float64)sampleRate
-{ return [[self alloc] initWithSampleRate:sampleRate]; }
-
-- (instancetype) initWithSampleRate:(Float64)sampleRate
-{
-	self = [super init];
-	if (self != nil)
-	{
-		[self setSampleRate:sampleRate];
-	}
-	
-	return self;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) processSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	// (re)initialize engines if necessary
-	Float64 sampleRate = self.sampleRate;
+	Float64 sampleRate = sampleMonitor.sampleRate;
 	if (mEngineRate != sampleRate)
 	{
 		mEngineRate = sampleRate;
@@ -97,26 +81,14 @@ static OSStatus renderCallback(
 		mEngineR = RMSEngineInit(sampleRate);
 	}
 
-
-	uint64_t index = mIndex;
-	uint64_t maxIndex = sampleMonitor.maxIndex;
-	
-	if (index > maxIndex)
-	{ index = maxIndex; }
-	
-	uint64_t count = maxIndex+1 - index;
-	uint64_t maxCount = sampleMonitor.length >> 1;
-	
-	if (count > maxCount)
-	{
-		count = maxCount;
-		index = maxIndex - count;
-	}
-
 	rmsbuffer_t *bufferL = [sampleMonitor bufferAtIndex:0];
 	rmsbuffer_t *bufferR = [sampleMonitor bufferAtIndex:1];
 
-	for (int n=0; n!=count; n++)
+	NSRange R = [sampleMonitor availableRangeWithIndex:mIndex];
+	NSUInteger index = R.location;
+	NSUInteger count = R.length;
+	
+	for (NSUInteger n=count; n!=0; n--)
 	{
 		float L = RMSBufferGetSampleAtIndex(bufferL, index);
 		RMSEngineAddSample(&mEngineL, L);

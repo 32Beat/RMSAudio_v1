@@ -31,17 +31,16 @@
 @implementation RMSSpectrogram
 ////////////////////////////////////////////////////////////////////////////////
 
-+ (instancetype) instanceWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor
-{ return [[self alloc] initWithSize:(size_t)N sampleMonitor:sampleMonitor]; }
++ (instancetype) instanceWithLength:(size_t)N
+{ return [[self alloc] initWithLength:(size_t)N]; }
 
-- (instancetype) initWithSize:(size_t)N sampleMonitor:(RMSSampleMonitor *)sampleMonitor
+- (instancetype) initWithLength:(size_t)N
 {
 	self = [super init];
 	if (self != nil)
 	{
-		if ([self setSize:N])
+		if ([self setLength:N])
 		{
-			_sampleMonitor = sampleMonitor;
 			return self;
 		}
 	}
@@ -92,10 +91,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (size_t) size
+- (size_t) length
 { return mDCTCount; }
 
-- (BOOL) setSize:(size_t)N
+- (BOOL) setLength:(size_t)N
 {
 	N = ceil(log2(N));
 
@@ -212,10 +211,15 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
-- (NSBitmapImageRep *) spectrumImageWithGain:(size_t)a
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
 	
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBitmapImageRep *) spectrumImageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor gain:(int)gain
+{
 	uint64_t maxSampleCount = sampleMonitor.maxIndex + 1;
 
 	// need at least one row of sample data
@@ -250,7 +254,7 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 	
 	// return image
 	return [self imageWithSampleMonitor:sampleMonitor
-	range:(NSRange){ rowIndex, rowCount } gain:a];
+	range:(NSRange){ rowIndex, rowCount } gain:gain];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
