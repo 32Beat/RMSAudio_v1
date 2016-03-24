@@ -11,41 +11,62 @@
 
 
 @interface RMSOscilloscopeView ()
-@property (nonatomic) NSBezierPath *wavePath;
+{
+	uint64_t mIndex;
+}
+@property (nonatomic) NSBezierPath *wavePathL;
+@property (nonatomic) NSBezierPath *wavePathR;
 @end
 
+#define HSB(h, s, b) \
+[NSColor colorWithCalibratedHue:h/360.0 saturation:s brightness:b alpha:1.0]
 
+////////////////////////////////////////////////////////////////////////////////
 @implementation RMSOscilloscopeView
+////////////////////////////////////////////////////////////////////////////////
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	NSRect B = self.bounds;
+	uint64_t maxIndex = sampleMonitor.maxIndex;
+	size_t N = sampleMonitor.sampleRate / 20.0;
 	
-	size_t N = B.size.width;
+	uint64_t index = N * (maxIndex / N);
+	if (mIndex == index) return;
 	
-	uint64_t index = sampleMonitor.maxIndex;
+	mIndex = index;
+	
 	rmsbuffer_t *bufferL = [sampleMonitor bufferAtIndex:0];
 	rmsbuffer_t *bufferR = [sampleMonitor bufferAtIndex:1];
 	
+	NSRect B = self.bounds;
 	CGFloat ym = NSMidY(B);
 	CGFloat yh = NSMaxY(B)-ym;
 	
-	NSBezierPath *path = [NSBezierPath new];
+	NSBezierPath *pathL = [NSBezierPath new];
+	NSBezierPath *pathR = [NSBezierPath new];
 	
-	[path moveToPoint:(NSPoint){ N+0.5, ym }];
+	[pathL moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
+	[pathR moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
+	CGFloat y, x = NSMaxX(B);
+	CGFloat xstep = B.size.width / N;
 	for (int n=N; n!=0; n--)
 	{
-		CGFloat x = n - 0.5;
-		CGFloat y = ym + yh * RMSBufferGetSampleAtIndex(bufferL, index--);
-		[path lineToPoint:(NSPoint){ x, y }];
+		x -= xstep;
+		y = ym + yh * RMSBufferGetSampleAtIndex(bufferL, index--);
+		[pathL lineToPoint:(NSPoint){ x, y }];
+		y = ym + yh * RMSBufferGetSampleAtIndex(bufferR, index--);
+		[pathR lineToPoint:(NSPoint){ x, y }];
  	}
 	
 	dispatch_async(dispatch_get_main_queue(),
 	^{
-		self.wavePath = path;
+		self.wavePathL = pathL;
+		self.wavePathR = pathR;
 		[self setNeedsDisplay:YES];
 	});
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];
@@ -53,8 +74,10 @@
 	[[NSColor whiteColor] set];
 	NSRectFill(self.bounds);
 	
-	[[NSColor blackColor] set];
-	[self.wavePath stroke];
+	[HSB(120.0, 1.0, 0.5) set];
+	[self.wavePathL stroke];
+	[[NSColor redColor] set];
+	[self.wavePathR stroke];
 
 	[[NSColor blackColor] set];
 	NSFrameRect(self.bounds);
@@ -62,4 +85,6 @@
     // Drawing code here.
 }
 
+////////////////////////////////////////////////////////////////////////////////
 @end
+////////////////////////////////////////////////////////////////////////////////
