@@ -7,10 +7,12 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "RMSSampleMonitor.h"
 #import "RMSSampleMonitorView.h"
 #import "RMSSpectrogram.h"
 
-@interface RMSSpectrumView : RMSSampleMonitorView
+@interface RMSSpectrumView : NSView
+<RMSSampleMonitorObserverProtocol>
 
 - (void) setGain:(UInt32)gain;
 - (void) setLength:(UInt32)length;

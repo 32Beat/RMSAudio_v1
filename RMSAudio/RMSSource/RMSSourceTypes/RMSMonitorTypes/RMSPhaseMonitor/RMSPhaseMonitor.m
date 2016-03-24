@@ -29,7 +29,7 @@
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	if (mCount == 0)
-	{ mCount = 256; }
+	{ mCount = 512; }
 	
 	float *ptr[2] = { mL, mR };
 	[sampleMonitor getSamples:ptr count:mCount];

@@ -20,6 +20,9 @@
 	
 	NSMutableArray *mObservers;
 }
+
+@property (nonatomic, assign) BOOL pendingUpdate;
+
 @end
 
 
@@ -215,14 +218,27 @@ static OSStatus renderCallback(
 
 - (void) updateObservers
 {
-	for(id object in mObservers)
+//*
+	for(id observer in mObservers)
 	{
-		[object updateWithSampleMonitor:self];
+		[observer updateWithSampleMonitor:self];
 		if ([self.delegate respondsToSelector:
 			@selector(sampleMonitor:didUpdateObserver:)])
-		{ [self.delegate sampleMonitor:self didUpdateObserver:object]; }
+		{ [self.delegate sampleMonitor:self didUpdateObserver:observer]; }
 	}
-//	[mObservers makeObjectsPerformSelector:@selector(updateWithSampleMonitor:) withObject:self];
+/*/
+	[mObservers enumerateObjectsWithOptions:NSEnumerationConcurrent
+	usingBlock:^(id observer, NSUInteger index, BOOL *stop)
+	{
+		[observer updateWithSampleMonitor:self];
+		if ([self.delegate respondsToSelector:
+			@selector(sampleMonitor:didUpdateObserver:)])
+		{
+			dispatch_async(dispatch_get_main_queue(),
+			^{ [self.delegate sampleMonitor:self didUpdateObserver:observer]; });
+		}
+	}];
+//*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////

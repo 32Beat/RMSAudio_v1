@@ -24,12 +24,17 @@
 	vDSP_DFT_Setup mDCTSetup;
 }
 
+@property (nonatomic) NSBitmapImageRep *spectrumImage;
+
 @end
 
 
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSSpectrogram
 ////////////////////////////////////////////////////////////////////////////////
+
+- (instancetype) init
+{ return [self initWithLength:2048]; }
 
 + (instancetype) instanceWithLength:(size_t)N
 { return [[self alloc] initWithLength:(size_t)N]; }
@@ -59,14 +64,8 @@
 
 - (BOOL) prepareMemory
 {
-	if (mW != nil)
-	{ free(mW); }
-	
 	mW = [self createDCTWindowWithLength:mDCTCount];
 	if (mW == nil) return NO;
-	
-	if (mDCTSetup != nil)
-	{ vDSP_DFT_DestroySetup(mDCTSetup); }
 	
 	mDCTSetup = vDSP_DCT_CreateSetup(nil, mDCTCount, vDSP_DCT_IV);
 	if (mDCTSetup == nil) return NO;
@@ -100,6 +99,8 @@
 
 	if (mDCTShift != N)
 	{
+		[self releaseMemory];
+		
 		mDCTShift = N;
 		mDCTCount = 1 << N;
 		mRowIndex = 0;
@@ -213,12 +214,21 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	
+	self.spectrumImage = [self spectrumImageWithSampleMonitor:sampleMonitor];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 - (NSBitmapImageRep *) spectrumImageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor gain:(int)gain
+{
+	NSBitmapImageRep *bitmap = [self spectrumImageWithSampleMonitor:sampleMonitor];
+	[RMSSpectrogram convertSpectrumImage:bitmap withGain:gain];
+	return bitmap;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBitmapImageRep *) spectrumImageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	uint64_t maxSampleCount = sampleMonitor.maxIndex + 1;
 
@@ -254,13 +264,13 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 	
 	// return image
 	return [self imageWithSampleMonitor:sampleMonitor
-	range:(NSRange){ rowIndex, rowCount } gain:gain];
+	range:(NSRange){ rowIndex, rowCount }];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 - (NSBitmapImageRep *) imageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
-	range:(NSRange)rangeY gain:(size_t)a
+	range:(NSRange)rangeY
 {
 	NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc]
 		initWithBitmapDataPlanes:nil
@@ -306,12 +316,35 @@ static void NSBitmapImageRepConvertToSpectrum(NSBitmapImageRep *bitmap, size_t A
 		R.location -= R.length>>1;
 	}
 	
-	float A = pow(10.0, a);
-
-	ConvertToSpectrumColors(A, (float *)bitmap.bitmapData, (UInt32 *)bitmap.bitmapData, \
-	bitmap.pixelsHigh * bitmap.pixelsWide);
-	
 	return bitmap;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
++ (void) convertSpectrumImage:(NSBitmapImageRep *)spectrumImage withGain:(int)gain
+{
+	float A = pow(10.0, gain);
+
+	float *srcPtr = (float *)spectrumImage.bitmapData;
+	UInt32 *dstPtr = (UInt32 *)spectrumImage.bitmapData;
+	size_t N = spectrumImage.pixelsHigh * spectrumImage.pixelsWide;
+	
+	ConvertToSpectrumColors(A, srcPtr, dstPtr, N);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBitmapImageRep *)spectrumImageWithGain:(int)gain
+{
+	float A = pow(10.0, gain);
+
+	float *srcPtr = (float *)_spectrumImage.bitmapData;
+	UInt32 *dstPtr = (UInt32 *)_spectrumImage.bitmapData;
+	size_t N = _spectrumImage.pixelsHigh * _spectrumImage.pixelsWide;
+	
+	ConvertToSpectrumColors(A, srcPtr, dstPtr, N);
+	
+	return _spectrumImage;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

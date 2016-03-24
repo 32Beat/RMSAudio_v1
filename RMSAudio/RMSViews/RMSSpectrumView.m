@@ -19,8 +19,6 @@
 	NSMutableArray *mImageArray;
 }
 
-@property (nonatomic) NSBitmapImageRep *imagePtr;
-
 @end
 
 
@@ -40,51 +38,19 @@
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) triggerUpdate
-{
-	RMSSampleMonitor *sampleMonitor = self.sampleMonitor;
-	if (sampleMonitor != nil)
-	{
-		[self willUpdateWithSampleMonitor:sampleMonitor];
-		[self updateWithSampleMonitor:sampleMonitor];
-		[self didUpdateWithSampleMonitor:sampleMonitor];
-		[self setNeedsDisplay:YES];
-	}
-}
-
-
-/*
-	Following three calls are guaranteed to run consecutively & non-concurrently 
-	willUpdateWith... will be run on main
-	updateWith... will be run in background
-	didUpdateWith... will be run on main.
-	
-*/
-- (void) willUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	if (mLength == 0)
 	{ mLength = 2048; }
 	
 	if (mSpectrogram.length != mLength)
-	{
-		mSpectrogram = [RMSSpectrogram instanceWithLength:mLength];
-		mLength = mSpectrogram.length;
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
-{
-	self.imagePtr = [mSpectrogram spectrumImageWithSampleMonitor:sampleMonitor gain:mGain];
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) didUpdateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
-{
-	[self appendImageRep:self.imagePtr];
-	self.imagePtr = nil;
+	{ mSpectrogram = [RMSSpectrogram instanceWithLength:mLength]; }
+	
+	NSBitmapImageRep *imagePtr =
+	[mSpectrogram spectrumImageWithSampleMonitor:sampleMonitor gain:mGain];
+	
+	dispatch_async(dispatch_get_main_queue(),
+	^{ [self appendImageRep:imagePtr]; });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +68,7 @@
 		[self updateArrayForSize:self.bounds.size];
 	}
 	
-	//[self setNeedsDisplay:YES];
+	[self setNeedsDisplay:YES];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,28 +94,27 @@
 // Q&D moving spectrum
 - (void)drawRect:(NSRect)dirtyRect
 {
-    [super drawRect:dirtyRect];
-	
-	[[NSColor blackColor] set];
-	NSRectFill(self.bounds);
-	
-	NSRect dstR = self.bounds;
-	CGFloat maxY = NSMaxY(dstR);
-	CGFloat minY = NSMinY(dstR);
-	dstR.origin.y = maxY;
-	
 	UInt32 n = 0;
-
-	while ((n < mImageArray.count)&&(dstR.origin.y > minY))
+	NSRect B = self.bounds;
+	
+	while ((n < mImageArray.count)&&(B.size.height > 0.0))
 	{
 		NSImageRep *imageRep = [mImageArray objectAtIndex:n];
 		
+		B.size.height -= imageRep.size.height;
+
+		NSRect dstR = B;
+		dstR.origin.y += dstR.size.height;
 		dstR.size.height = imageRep.size.height;
-		dstR.origin.y -= dstR.size.height;
-		
 		[imageRep drawInRect:dstR];
 
 		n += 1;
+	}
+	
+	if (B.size.height > 0.0)
+	{
+		[[NSColor blackColor] set];
+		NSRectFill(B);
 	}
 }
 

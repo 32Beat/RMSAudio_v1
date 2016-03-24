@@ -20,12 +20,17 @@
 */
 
 @interface RMSSpectrogram : NSObject
+<RMSSampleMonitorObserverProtocol>
+
+- (NSBitmapImageRep *) spectrumImageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor gain:(int)gain;
 
 + (instancetype) instanceWithLength:(size_t)N;
 - (instancetype) initWithLength:(size_t)N;
 - (size_t)length;
+- (BOOL) setLength:(size_t)N;
 
-- (NSBitmapImageRep *) spectrumImageWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor gain:(int)gain;
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
+- (NSBitmapImageRep *) spectrumImageWithGain:(int)gain;
 
 + (RMSClip *) computeSampleBufferUsingImage:(NSImage *)image;
 
