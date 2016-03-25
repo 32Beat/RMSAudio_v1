@@ -38,27 +38,26 @@
 	rmsbuffer_t *bufferL = [sampleMonitor bufferAtIndex:0];
 	rmsbuffer_t *bufferR = [sampleMonitor bufferAtIndex:1];
 
-	CGFloat y, x = 1.0;
+	NSPoint P = { 1.0, 0.0 };
 	CGFloat X = 1.0/(N-1);
-	CGFloat Y = pow(2.0, self.gain);
 
 	NSBezierPath *pathL = [NSBezierPath new];
 	NSBezierPath *pathR = [NSBezierPath new];
 
-	y = Y * RMSBufferGetSampleAtIndex(bufferL, index);
-	[pathL moveToPoint:(NSPoint){ x, y }];
-	y = Y * RMSBufferGetSampleAtIndex(bufferR, index);
-	[pathR moveToPoint:(NSPoint){ x, y }];
+	P.y = RMSBufferGetSampleAtIndex(bufferL, index);
+	[pathL moveToPoint:P];
+	P.y = RMSBufferGetSampleAtIndex(bufferR, index);
+	[pathR moveToPoint:P];
 	
 	for (int n=N; n!=0; n--)
 	{
-		x -= X;
+		P.x -= X;
 		index -= 1;
-		
-		y = Y * RMSBufferGetSampleAtIndex(bufferL, index);
-		[pathL lineToPoint:(NSPoint){ x, y }];
-		y = Y * RMSBufferGetSampleAtIndex(bufferR, index);
-		[pathR lineToPoint:(NSPoint){ x, y }];
+
+		P.y = RMSBufferGetSampleAtIndex(bufferL, index);
+		[pathL lineToPoint:P];
+		P.y = RMSBufferGetSampleAtIndex(bufferR, index);
+		[pathR lineToPoint:P];
 	}
 
 	dispatch_async(dispatch_get_main_queue(),
@@ -71,16 +70,21 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+- (BOOL) isOpaque
+{ return YES; }
+
 - (void)drawRect:(NSRect)dirtyRect
 {
+	NSRect B = self.bounds;
+
 	[[NSColor whiteColor] set];
 	NSRectFill(self.bounds);
-
-	NSRect B = self.bounds;
 	
 	NSAffineTransform *T = [NSAffineTransform new];
 	[T translateXBy:1.5 yBy:NSMidY(B)];
-	[T scaleXBy:B.size.width-3.0 yBy:B.size.height/2.0];
+	CGFloat X = (B.size.width-3.0);
+	CGFloat Y = (B.size.height-2.0) * pow(2.0, self.gain-1);
+	[T scaleXBy:X yBy:Y];
 	
 	[HSB(180.0, 1.0, 0.5) set];
 	[[T transformBezierPath:self.wavePathL] stroke];

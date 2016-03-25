@@ -15,10 +15,13 @@
 
 
 @interface RMSLissajousView : RMSSampleMonitorView
+<RMSSampleMonitorObserverProtocol>
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
-@property (nonatomic) NSBezierPath *resultPath;
+@property (nonatomic, assign) float correlation;
+@property (nonatomic, assign) float correlationL;
+@property (nonatomic, assign) float correlationR;
 
-- (float) correlationValue;
 - (void) setFilter:(float)value;
 - (void) setDuration:(float)value;
 

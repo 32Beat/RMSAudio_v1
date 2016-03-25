@@ -37,18 +37,25 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
+	This is being called from a concurrent backgroundthread
+	Modelobject management is contained within this call.
+*/
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
+	// 1. ensure parameters are valid
 	if (mLength == 0)
 	{ mLength = 2048; }
 	
+	// 2. initialize or recreate model object if necessary
 	if (mSpectrogram.length != mLength)
 	{ mSpectrogram = [RMSSpectrogram instanceWithLength:mLength]; }
 	
+	// 3. create representation
 	NSBitmapImageRep *imagePtr =
 	[mSpectrogram spectrumImageWithSampleMonitor:sampleMonitor gain:mGain];
 	
+	// 4. transfer to view on main
 	dispatch_async(dispatch_get_main_queue(),
 	^{ [self appendImageRep:imagePtr]; });
 }
@@ -90,6 +97,9 @@
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+- (BOOL) isOpaque
+{ return YES; }
 
 // Q&D moving spectrum
 - (void)drawRect:(NSRect)dirtyRect

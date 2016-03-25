@@ -11,9 +11,8 @@
 
 @interface RMSOscilloscopeView : NSView
 <RMSSampleMonitorObserverProtocol>
-
-@property (nonatomic, assign) uint64_t gain;
-
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
+
+@property (nonatomic, assign) int gain;
 
 @end

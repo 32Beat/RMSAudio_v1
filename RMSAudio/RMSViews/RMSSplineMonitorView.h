@@ -11,7 +11,10 @@
 #import "RMSSplineMonitor.h"
 
 @interface RMSSplineMonitorView : NSView
+<RMSSampleMonitorObserverProtocol>
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
-- (void) updateData:(RMSSplineMonitor *)splineMonitor;
+@property (nonatomic) NSBezierPath *errorPath;
+@property (nonatomic, assign) double minError;
 
 @end

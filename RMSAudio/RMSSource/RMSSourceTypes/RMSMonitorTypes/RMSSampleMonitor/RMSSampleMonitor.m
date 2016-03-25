@@ -218,7 +218,7 @@ static OSStatus renderCallback(
 
 - (void) updateObservers
 {
-//*
+/*
 	for(id observer in mObservers)
 	{
 		[observer updateWithSampleMonitor:self];

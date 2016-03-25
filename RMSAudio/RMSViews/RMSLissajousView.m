@@ -15,6 +15,8 @@ float gSINn[kRMSLissajousAngleCount];
 
 @interface RMSLissajousView ()
 {
+	RMSPhaseMonitor *mPhaseMonitor;
+	
 	uint64_t mIndex;
 	uint64_t mCount;
 	float mL[kRMSLissajousCount];
@@ -33,18 +35,7 @@ float gSINn[kRMSLissajousAngleCount];
 	
 }
 
-@property (nonatomic, assign) float correlation;
-@property (nonatomic, assign) float correlationL;
-@property (nonatomic, assign) float correlationR;
 
-/*
-	Following need to be atomic since a redraw may be triggered 
-	by the system while the background process runs
-	
-	Alternatively, we might create an internal transfer ivar, 
-	since "didUpdateWithSampleMonitor:" and "redraw:" will 
-	never be called concurrently.
-*/
 @property (atomic) NSBezierPath *phasePath;
 @property (atomic) NSBezierPath *anglePath;
 
@@ -143,18 +134,21 @@ double computeAvg(float *srcPtr, size_t n)
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	float *ptr[2] = { mL, mR };
+	if (mPhaseMonitor == nil)
+	{ mPhaseMonitor = [RMSPhaseMonitor new]; }
 	
-	if (mCount == 0)
-	{ mCount = 256; }
+	[mPhaseMonitor updateWithSampleMonitor:sampleMonitor];
 	
-	// TODO: getsamples with range and step,
-	// for better distribution over elapsed time
+	NSBezierPath *phasePath = [mPhaseMonitor resultPath];
+	self.correlation = mPhaseMonitor.correlation;
+	self.correlationL = mPhaseMonitor.correlationL;
+	self.correlationR = mPhaseMonitor.correlationR;
 	
-	[sampleMonitor getSamples:ptr count:mCount];
-	[self updatePhasePath];
-	//[self updateAnglePath];
-	[self updateCorrelation];
+	dispatch_async(dispatch_get_main_queue(),
+	^{
+		self.phasePath = phasePath;
+		[self setNeedsDisplay:YES];
+	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,13 +287,17 @@ double computeAvg(float *srcPtr, size_t n)
 
 - (void) updateData:(RMSPhaseMonitor *)phaseMonitor
 {
-	self.resultPath = phaseMonitor.resultPath;
+	self.phasePath = phaseMonitor.resultPath;
 	self.correlation = phaseMonitor.correlation;
 	self.correlationL = phaseMonitor.correlationL;
 	self.correlationR = phaseMonitor.correlationR;
 	
 	[self setNeedsDisplay:YES];
 }
+
+
+- (BOOL) isOpaque
+{ return YES; }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
@@ -322,7 +320,7 @@ double computeAvg(float *srcPtr, size_t n)
 	
 
 	[HSB(60.0, 0.25, 1.0) set];
-	[self drawPath:self.resultPath];
+	[self drawPath:self.phasePath];
 
 	[HSB(240.0, 0.5, 1.0) set];
 //	[self drawPath:self.anglePath];

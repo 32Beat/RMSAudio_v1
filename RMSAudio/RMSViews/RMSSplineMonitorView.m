@@ -15,15 +15,26 @@
 
 @interface RMSSplineMonitorView ()
 {
+	RMSSplineMonitor *mSplineMonitor;
 }
 
-@property (nonatomic) NSBezierPath *errorPath;
-@property (nonatomic, assign) double minError;
 
 @end
 
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSSplineMonitorView
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
+{
+	if (mSplineMonitor == nil)
+	{ mSplineMonitor = [RMSSplineMonitor new]; }
+	
+	[mSplineMonitor updateWithSampleMonitor:sampleMonitor];
+	
+	[self updateData:mSplineMonitor];
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 - (void) updateData:(RMSSplineMonitor *)splineMonitor
@@ -39,6 +50,8 @@
 	
 	if (maxE == 0.0)
 	{ return; }
+
+	self.minError = splineMonitor.minResult;
 	
 	NSBezierPath *path = [NSBezierPath new];
 	[path moveToPoint:(NSPoint){ 0.0, errorPtr[0]/maxE }];
@@ -48,19 +61,20 @@
 		[path lineToPoint:(NSPoint){ x, errorPtr[n]/maxE }];
 	}
 	
-	self.errorPath = path;
-
-	self.minError = splineMonitor.minResult;
-
-	[self setNeedsDisplay:YES];
+	dispatch_async(dispatch_get_main_queue(),
+	^{
+		self.errorPath = path;
+		[self setNeedsDisplay:YES];
+	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void)drawRect:(NSRect)dirtyRect {
-    [super drawRect:dirtyRect];
-    
-	
+- (BOOL) isOpaque
+{ return YES; }
+
+- (void)drawRect:(NSRect)dirtyRect
+{
 	[[NSColor whiteColor] set];
 	NSRectFill(self.bounds);
 	
