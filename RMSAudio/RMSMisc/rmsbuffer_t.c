@@ -248,7 +248,7 @@ double RMSBufferGetValueWithDelayCR(rmsbuffer_t *buffer, double sampleDelay)
 float RMSBufferStepSizeForFrequency(rmsbuffer_t *buffer, float F)
 { return F / (buffer->indexMask + 1.0); }
 
-float RMSBufferValueAtOffset(rmsbuffer_t *buffer, double offset)
+float RMSBufferGetValueAtOffset(rmsbuffer_t *buffer, double offset)
 {
 	uint64_t index = offset;
 	uint64_t indexMask = buffer->indexMask;

@@ -84,6 +84,8 @@ float RMSBufferGetSampleWithDelay(rmsbuffer_t *buffer, uint32_t sampleDelay);
 double RMSBufferGetValueWithDelay(rmsbuffer_t *buffer, double sampleDelay);
 double RMSBufferGetValueWithDelayCR(rmsbuffer_t *buffer, double sampleDelay);
 
+float RMSBufferGetValueAtOffset(rmsbuffer_t *buffer, double offset);
+
 // Update index, then set sample at index modulo buffersize
 void RMSBufferWriteSample(rmsbuffer_t *buffer, float S);
 

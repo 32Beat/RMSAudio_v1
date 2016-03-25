@@ -40,22 +40,28 @@
 	
 	NSRect B = self.bounds;
 	CGFloat ym = NSMidY(B);
-	CGFloat yh = NSMaxY(B)-ym;
+	CGFloat yh = (NSMaxY(B)-ym)*pow(2.0, self.gain);
 	
 	NSBezierPath *pathL = [NSBezierPath new];
 	NSBezierPath *pathR = [NSBezierPath new];
 	
 	[pathL moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
 	[pathR moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
-	CGFloat y, x = NSMaxX(B);
-	CGFloat xstep = B.size.width / N;
-	for (int n=N; n!=0; n--)
+	
+	double offset = index - 0.5;
+	double step = N / B.size.width;
+	
+	CGFloat y, x = NSMaxX(B)-0.5;
+
+	for (int n=B.size.width; n!=0; n--)
 	{
-		x -= xstep;
-		y = ym + yh * RMSBufferGetSampleAtIndex(bufferL, index--);
+		y = ym + yh * RMSBufferGetValueAtOffset(bufferL, offset);
 		[pathL lineToPoint:(NSPoint){ x, y }];
-		y = ym + yh * RMSBufferGetSampleAtIndex(bufferR, index--);
+		y = ym + yh * RMSBufferGetValueAtOffset(bufferR, offset);
 		[pathR lineToPoint:(NSPoint){ x, y }];
+
+		offset -= step;
+		x -= 1.0;
  	}
 	
 	dispatch_async(dispatch_get_main_queue(),
