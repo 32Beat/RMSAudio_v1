@@ -79,8 +79,8 @@
 	NSRect B = self.bounds;
 	
 	NSAffineTransform *T = [NSAffineTransform new];
-	[T translateXBy:1.0 yBy:NSMidY(B)];
-	[T scaleXBy:B.size.width-2.0 yBy:B.size.height/2.0];
+	[T translateXBy:1.5 yBy:NSMidY(B)];
+	[T scaleXBy:B.size.width-3.0 yBy:B.size.height/2.0];
 	
 	[HSB(180.0, 1.0, 0.5) set];
 	[[T transformBezierPath:self.wavePathL] stroke];
