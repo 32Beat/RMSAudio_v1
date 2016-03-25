@@ -37,33 +37,30 @@
 	
 	rmsbuffer_t *bufferL = [sampleMonitor bufferAtIndex:0];
 	rmsbuffer_t *bufferR = [sampleMonitor bufferAtIndex:1];
-	
-	NSRect B = self.bounds;
-	CGFloat ym = NSMidY(B);
-	CGFloat yh = (NSMaxY(B)-ym)*pow(2.0, self.gain);
-	
+
+	CGFloat y, x = 1.0;
+	CGFloat X = 1.0/(N-1);
+	CGFloat Y = pow(2.0, self.gain);
+
 	NSBezierPath *pathL = [NSBezierPath new];
 	NSBezierPath *pathR = [NSBezierPath new];
-	
-	[pathL moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
-	[pathR moveToPoint:(NSPoint){ B.size.width+0.5, ym }];
-	
-	double offset = index - 0.5;
-	double step = N / B.size.width;
-	
-	CGFloat y, x = NSMaxX(B)-0.5;
 
-	for (int n=B.size.width; n!=0; n--)
+	y = Y * RMSBufferGetSampleAtIndex(bufferL, index);
+	[pathL moveToPoint:(NSPoint){ x, y }];
+	y = Y * RMSBufferGetSampleAtIndex(bufferR, index);
+	[pathR moveToPoint:(NSPoint){ x, y }];
+	
+	for (int n=N; n!=0; n--)
 	{
-		y = ym + yh * RMSBufferGetValueAtOffset(bufferL, offset);
+		x -= X;
+		index -= 1;
+		
+		y = Y * RMSBufferGetSampleAtIndex(bufferL, index);
 		[pathL lineToPoint:(NSPoint){ x, y }];
-		y = ym + yh * RMSBufferGetValueAtOffset(bufferR, offset);
+		y = Y * RMSBufferGetSampleAtIndex(bufferR, index);
 		[pathR lineToPoint:(NSPoint){ x, y }];
+	}
 
-		offset -= step;
-		x -= 1.0;
- 	}
-	
 	dispatch_async(dispatch_get_main_queue(),
 	^{
 		self.wavePathL = pathL;
@@ -74,21 +71,24 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void)drawRect:(NSRect)dirtyRect {
-    [super drawRect:dirtyRect];
-	
+- (void)drawRect:(NSRect)dirtyRect
+{
 	[[NSColor whiteColor] set];
 	NSRectFill(self.bounds);
+
+	NSRect B = self.bounds;
 	
-	[HSB(120.0, 1.0, 0.5) set];
-	[self.wavePathL stroke];
+	NSAffineTransform *T = [NSAffineTransform new];
+	[T translateXBy:1.0 yBy:NSMidY(B)];
+	[T scaleXBy:B.size.width-2.0 yBy:B.size.height/2.0];
+	
+	[HSB(180.0, 1.0, 0.5) set];
+	[[T transformBezierPath:self.wavePathL] stroke];
 	[[NSColor redColor] set];
-	[self.wavePathR stroke];
+	[[T transformBezierPath:self.wavePathR] stroke];
 
 	[[NSColor blackColor] set];
 	NSFrameRect(self.bounds);
-	
-    // Drawing code here.
 }
 
 ////////////////////////////////////////////////////////////////////////////////

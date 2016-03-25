@@ -42,6 +42,13 @@ typedef struct rmsbuffer_t
 }
 rmsbuffer_t;
 
+typedef struct rmsrange_t
+{
+	uint64_t index;
+	uint64_t count;
+}
+rmsrange_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Create bufferstruct with internal memory
@@ -85,6 +92,9 @@ double RMSBufferGetValueWithDelay(rmsbuffer_t *buffer, double sampleDelay);
 double RMSBufferGetValueWithDelayCR(rmsbuffer_t *buffer, double sampleDelay);
 
 float RMSBufferGetValueAtOffset(rmsbuffer_t *buffer, double offset);
+float RMSBufferGetAverage(rmsbuffer_t *buffer, rmsrange_t R);
+float RMSBufferGetMin(rmsbuffer_t *buffer, rmsrange_t R);
+float RMSBufferGetMax(rmsbuffer_t *buffer, rmsrange_t R);
 
 // Update index, then set sample at index modulo buffersize
 void RMSBufferWriteSample(rmsbuffer_t *buffer, float S);

@@ -262,6 +262,60 @@ float RMSBufferGetValueAtOffset(rmsbuffer_t *buffer, double offset)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+float RMSBufferGetAverage(rmsbuffer_t *buffer, rmsrange_t R)
+{
+	uint64_t index = R.index;
+	uint64_t count = R.count;
+	uint64_t indexMask = buffer->indexMask;
+	
+	float S = buffer->sampleData[index&indexMask];
+
+	while (--count != 0)
+	{ S += buffer->sampleData[(++index)&indexMask]; }
+	
+	return S / R.count;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float RMSBufferGetMin(rmsbuffer_t *buffer, rmsrange_t R)
+{
+	uint64_t index = R.index;
+	uint64_t count = R.count;
+	uint64_t indexMask = buffer->indexMask;
+	
+	float M = buffer->sampleData[index&indexMask];
+
+	while (--count != 0)
+	{
+		float T = buffer->sampleData[(++index)&indexMask];
+		if (M > T) M = T;
+	}
+	
+	return M;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float RMSBufferGetMax(rmsbuffer_t *buffer, rmsrange_t R)
+{
+	uint64_t index = R.index;
+	uint64_t count = R.count;
+	uint64_t indexMask = buffer->indexMask;
+	
+	float M = buffer->sampleData[index&indexMask];
+
+	while (--count != 0)
+	{
+		float T = buffer->sampleData[(++index)&indexMask];
+		if (M < T) M = T;
+	}
+	
+	return M;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /*
 	UNDER CONSTRUCTION
 	------------------
