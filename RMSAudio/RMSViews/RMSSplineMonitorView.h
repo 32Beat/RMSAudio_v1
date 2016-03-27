@@ -14,7 +14,10 @@
 <RMSSampleMonitorObserverProtocol>
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
+- (void) reset;
+
 @property (nonatomic) NSBezierPath *errorPath;
-@property (nonatomic, assign) double minError;
+@property (nonatomic) NSBezierPath *deltaPath;
+@property (nonatomic, assign) double optimum;
 
 @end

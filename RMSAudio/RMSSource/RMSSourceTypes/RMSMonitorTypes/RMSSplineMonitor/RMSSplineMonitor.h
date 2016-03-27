@@ -16,11 +16,11 @@
 @interface RMSSplineMonitor : NSObject
 <RMSSampleMonitorObserverProtocol>
 
-- (void) resetEngine;
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
-- (const double *) errorPtr;
-- (double) minResult;
+- (double) optimum;
+- (NSBezierPath *) createErrorPath;
+- (NSBezierPath *) createSlopePath;
 
 //- (NSBitmapImageRep *) imageRepWithGain:(UInt32)a;
 

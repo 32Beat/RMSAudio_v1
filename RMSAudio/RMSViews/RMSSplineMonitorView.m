@@ -10,14 +10,14 @@
 #import "RMSSampleMonitor.h"
 #import <Accelerate/Accelerate.h>
 
-#define kRMSSplineMonitorCount 	2048
-#define kRMSSplineErrorCount 	32
 
 @interface RMSSplineMonitorView ()
 {
+	BOOL mReset;
 	RMSSplineMonitor *mSplineMonitor;
 }
 
+@property (atomic) NSBezierPath *linePath;
 
 @end
 
@@ -25,42 +25,22 @@
 @implementation RMSSplineMonitorView
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
-{
-	if (mSplineMonitor == nil)
-	{ mSplineMonitor = [RMSSplineMonitor new]; }
-	
-	[mSplineMonitor updateWithSampleMonitor:sampleMonitor];
-	
-	[self updateData:mSplineMonitor];
-}
+- (void) reset
+{ mReset = YES; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) updateData:(RMSSplineMonitor *)splineMonitor
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	size_t N = kRMSSplineErrorCount;
+	if (mSplineMonitor == nil || mReset)
+	{ mSplineMonitor = [RMSSplineMonitor new]; mReset = NO; }
+	
+	[mSplineMonitor updateWithSampleMonitor:sampleMonitor];
 
-	const double *errorPtr = splineMonitor.errorPtr;
-	
-	double minE = 0.0;
-	double maxE = 0.0;
-	vDSP_minvD(errorPtr, 1, &minE, N);
-	vDSP_maxvD(errorPtr, 1, &maxE, N);
-	
-	if (maxE == 0.0)
-	{ return; }
+	self.optimum = mSplineMonitor.optimum;
 
-	self.minError = splineMonitor.minResult;
-	
-	NSBezierPath *path = [NSBezierPath new];
-	[path moveToPoint:(NSPoint){ 0.0, errorPtr[0]/maxE }];
-	for (int n=1; n!=N; n++)
-	{
-		CGFloat x = 1.0 * n / (N-1);
-		[path lineToPoint:(NSPoint){ x, errorPtr[n]/maxE }];
-	}
-	
+	NSBezierPath *path = [mSplineMonitor createErrorPath];
+
 	dispatch_async(dispatch_get_main_queue(),
 	^{
 		self.errorPath = path;
@@ -68,6 +48,8 @@
 	});
 }
 
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
 - (BOOL) isOpaque
@@ -84,7 +66,7 @@
 	NSFrameRect(self.bounds);
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 
 - (void) drawGraph:(NSRect)B
 {
@@ -97,15 +79,43 @@
 		[T scaleXBy:B.size.width yBy:B.size.height];
 
 		[[T transformBezierPath:self.errorPath] stroke];
+
+		[[NSColor redColor] set];
+		[[T transformBezierPath:self.linePath] stroke];
+		
 	}
 
 	[[NSColor redColor] set];
-	float X1 = NSMinX(B)+floor(B.size.width * self.minError)+.5;
+//*
+{
+	float X1 = NSMinX(B)+floor(B.size.width * self.optimum)+.5;
 	float X2 = X1;
 	float Y1 = NSMinY(B);
 	float Y2 = NSMaxY(B);
 	[NSBezierPath strokeLineFromPoint:(NSPoint){ X1, Y1 }
 							  toPoint:(NSPoint){ X2, Y2 }];
+}
+//*/
+/*
+	float X1 = NSMinX(B)+0.333*B.size.width;
+	float Y1 = NSMinY(B)+self.avg1*B.size.height;
+	float X2 = NSMinX(B)+0.667*B.size.width;
+	float Y2 = NSMinY(B)+self.avg2*B.size.height;
+*/
+/*
+	float y1 = self.avg1;
+	float y2 = self.avg2;
+
+	float X1 = NSMinX(B)+0.0*B.size.width;
+	float Y1 = NSMidY(B)+y1*B.size.height;
+	float X2 = NSMinX(B)+1.0*B.size.width;
+	float Y2 = NSMidY(B)+y2*B.size.height;
+	
+	[NSBezierPath strokeLineFromPoint:(NSPoint){ X1, Y1 }
+							  toPoint:(NSPoint){ X2, Y2 }];
+*/
+
+
 }
 
 

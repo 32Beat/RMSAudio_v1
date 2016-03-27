@@ -21,14 +21,11 @@
 @interface RMSSplineMonitor ()
 {
 	double mE[kRMSSplineErrorCount];
-	float mT[kRMSSplineMonitorCount];
-	
-	double mMaxE;
-	double mMinE;
-	double mMinResult;
+	double mMaxE; // helps to scale mE to relative range
+	double mMinX; // will hold x-coordinate of lowest error location
+	UInt64 mN;    // stores modulating bin index
 
-	UInt64 mN;
-	BOOL mResetEngine;
+	float mT[kRMSSplineMonitorCount];
 }
 @end
 
@@ -39,17 +36,11 @@
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
-	if (mResetEngine == YES)
-	{
-		mResetEngine = NO;
-		vDSP_vclrD(mE, 1, kRMSSplineErrorCount);
-		mN = 0;
-	}
-	
 	uint64_t maxSampleCount = sampleMonitor.maxIndex+1;
 	if (maxSampleCount >= kRMSSplineMonitorCount)
 	{
 		NSRange R = { maxSampleCount - kRMSSplineMonitorCount, kRMSSplineMonitorCount };
+		
 		[sampleMonitor getSamplesL:mT withRange:R];
 		[self testSamples:mT];
 		[sampleMonitor getSamplesR:mT withRange:R];
@@ -120,7 +111,7 @@ static double ComputeError(double a, float *srcPtr)
 		
 		double E = ComputeError(a, &srcPtr[n]);
 		
-		mE[mN] += 0.0001 * (E - mE[mN]);
+		mE[mN] += 0.00001 * (E - mE[mN]);
 		
 		mN += 31;
 		mN &= (kRMSSplineErrorCount-1);
@@ -131,71 +122,153 @@ static double ComputeError(double a, float *srcPtr)
 
 - (void) updateStats
 {
-	double min = mE[0];
-	double max = mE[0];
+	size_t N = self.errorCount;
+	vDSP_maxvD(mE, 1, &mMaxE, N);
 	
-	for (int n=1; n!=kRMSSplineErrorCount; n++)
+	if (mMaxE != 0.0)
 	{
-		if (min > mE[n]) min = mE[n];
-		if (max < mE[n]) max = mE[n];
+		double a = [self averageSlope];
+		double b = [self averageIntercept:a];
+		
+		mMinX = a != 0.0 ? -b / a : 0.0;
 	}
-	
-	mMinE = min;
-	mMaxE = max;
-
-	double A1 = mE[0];
-	double A2 = mE[kRMSSplineErrorCount-1];
-	double A = 0.5;
-	if (A1 > A2)
-	{
-		A = 1.0/(1.0+sqrt((A2-min)/(A1-min)));
-	}
-	else
-	if (A1 < A2)
-	{
-		A = 1.0/(1.0+sqrt((A1-min)/(A2-min)));
-		A = 1.0 - A;
-	}
-	
-	mMinResult = A;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (double) averageSlope
+{
+	double sum = 0.0;
+	double sumN = 0.0;
+
+	size_t N = self.errorCount;
+	
+	for (int n=1; n!=N-1; n++)
+	{
+		for (int m=n+1; m!=N; m++)
+		{
+			sum += ([self slopeAtIndex:m]-[self slopeAtIndex:n])/(m-n);
+			sumN += 1;
+		}
+	}
+	
+	return (N-1) * sum / sumN;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (double) averageIntercept:(double)a
+{
+	double sum = 0.0;
+	
+	size_t N = self.errorCount;
+
+	for (int n=1; n!=N; n++)
+	{
+		double x = (1.0*n-0.5)/(N-1);
+		double y = [self slopeAtIndex:n];
+		sum += y - a*x;
+	}
+	
+	return sum / (N-1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+- (void) LSQ
+{
+	double Sx = 0.0;
+	double Sy = 0.0;
+	double Sxx = 0.0;
+	double Sxy = 0.0;
+	double Syy = 0.0;
+	
+	for (int n=1; n!=N; n++)
+	{
+		CGFloat x = (1.0 * n - 0.5) / (N-1);
+		CGFloat y = (errorPtr[n]-errorPtr[n-1])/self.maxE;
+
+		Sx += x;
+		Sy += y;
+		Sxx += x*x;
+		Sxy += x*y;
+		Syy += y*y;
+	}
+
+	double sumN = (N-1);
+	double B = (sumN*Sxy-Sx*Sy)/(sumN*Sxx-Sx*Sx);
+	double A = (Sy-B*Sx)/sumN;
+}
+*/
+////////////////////////////////////////////////////////////////////////////////
+
+- (double) optimum
+{ return mMinX; }
+
+- (double) errorAtIndex:(int)n
+{ return mE[n] / mMaxE; }
+
+- (double) slopeAtIndex:(int)n
+{ return (mE[n]-mE[n-1]) / mMaxE; }
+
+- (NSPoint) errorPointAtIndex:(int)n
+{ return (NSPoint){ (CGFloat)n / (self.errorCount-1), [self errorAtIndex:n] }; }
+
+- (NSPoint) slopePointAtIndex:(int)n
+{ return (NSPoint){ (CGFloat)(n-0.5) / (self.errorCount-1), [self slopeAtIndex:n] }; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 - (const double *) errorPtr
 { return mE; }
 
-- (double) minResult
-{ return mMinResult; }
+- (size_t) errorCount
+{ return kRMSSplineErrorCount; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-- (void) resetEngine
-{ mResetEngine = YES; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (double) minValueForErrorData:(const double *)dataPtr
+- (NSBezierPath *) createErrorPath
 {
-	double min = dataPtr[0];
-	double max = dataPtr[0];
-	
-	for (long n=1; n!=kRMSSplineMonitorCount; n++)
-	{
-		if (min > dataPtr[n])
-		{ min = dataPtr[n]; }
-		else
-		if (max < dataPtr[n])
-		{ max = dataPtr[n]; }
-	}
+	if (mMaxE == 0.0)
+	{ return nil; }
 
-	double A1 = dataPtr[0];
-	double A2 = dataPtr[kRMSSplineMonitorCount-1];
+	int N = self.errorCount;
+
+	NSBezierPath *path = [NSBezierPath new];
+
+	NSPoint P = { 0.0, mE[0]/mMaxE };
+	[path moveToPoint:P];
+	for (int n=1; n!=N; n++)
+	{
+		P.x += (1.0/(N-1));
+		P.y = mE[n]/mMaxE;
+		[path lineToPoint:P];
+	}
 	
-	A1 = (A1 - min) / (max - min);
-	A2 = (A2 - min) / (max - min);
+	return path;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBezierPath *) createSlopePath
+{
+	if (mMaxE == 0.0)
+	{ return nil; }
+
+	int N = self.errorCount;
+
+	NSBezierPath *path = [NSBezierPath new];
 	
-	return A1 < A2 ? 1.0 - 1.0/(1.0+sqrt(A1)) : 1.0/(1.0+sqrt(A2));
+	NSPoint P = { 0.5/(N-1), 0.5 + (mE[1]-mE[0])/mMaxE };
+	[path moveToPoint:P];
+	for (int n=2; n!=N; n++)
+	{
+		P.x += (1.0/(N-1));
+		P.y = 0.5 + (mE[n]-mE[n-1])/mMaxE;
+		[path lineToPoint:P];
+	}
+	
+	return path;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
