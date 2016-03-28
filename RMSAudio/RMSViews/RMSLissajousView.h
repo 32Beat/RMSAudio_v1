@@ -22,6 +22,9 @@
 @property (nonatomic, assign) float correlationL;
 @property (nonatomic, assign) float correlationR;
 
+@property (nonatomic) IBOutlet NSTextField *label;
+
+
 - (void) setFilter:(float)value;
 - (void) setDuration:(float)value;
 

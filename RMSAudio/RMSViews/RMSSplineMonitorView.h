@@ -8,16 +8,17 @@
 
 #import <Cocoa/Cocoa.h>
 #import "RMSSampleMonitorView.h"
-#import "RMSSplineMonitor.h"
 
 @interface RMSSplineMonitorView : NSView
 <RMSSampleMonitorObserverProtocol>
-- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
 - (void) reset;
+- (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
-@property (nonatomic) NSBezierPath *errorPath;
+@property (nonatomic) NSBezierPath *resultPath;
 @property (nonatomic) NSBezierPath *deltaPath;
 @property (nonatomic, assign) double optimum;
+
+@property (nonatomic) IBOutlet NSTextField *label;
 
 @end

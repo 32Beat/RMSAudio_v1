@@ -16,6 +16,7 @@
 	BOOL mReset;
 	
 	RMSSplineMonitor *mMonitor;
+	NSBezierPath *mResultPath;
 }
 @end
 
@@ -41,19 +42,46 @@
 	// 2. update monitor
 	[mMonitor updateWithSampleMonitor:sampleMonitor];
 	
-	// 3. transfer latest results to GUI
-	NSBezierPath *path = [mMonitor createErrorPath];
+	// recreate or update resultPath accordingly
+	size_t N = mMonitor.errorCount;
+
+	if ((mResultPath == nil) || (mResultPath.elementCount != N))
+	{ mResultPath = [self bezierPathWithPointCount:N]; }
+
+	for (int n=0; n!=N; n++)
+	{
+		NSPoint P = { (CGFloat)n/(N-1),
+		[mMonitor errorAtIndex:n] };
+		[mResultPath setAssociatedPoints:&P atIndex:n];
+	}
+
+	// transfer result to UI
+	NSBezierPath *path = mResultPath;
 	double optimum = mMonitor.optimum;
-	NSString *labelText = [NSString stringWithFormat:@"%.3f", optimum];
+	NSString *text = [NSString stringWithFormat:@"%.3f", optimum];
 	
 	dispatch_async(dispatch_get_main_queue(),
 	^{
-		self.view.errorPath = path;
+		self.label.stringValue = text;
+		self.view.resultPath = path;
 		self.view.optimum = optimum;
-		[self.view setNeedsDisplay:YES];
-		
-		self.label.stringValue = labelText;
+		[self.view setNeedsDisplay:YES];		
 	});
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (NSBezierPath *) bezierPathWithPointCount:(int)N
+{
+	NSBezierPath *path = [NSBezierPath new];
+	[path moveToPoint:CGPointZero];
+	for (int n=0; n!=N; n++)
+	{
+		NSPoint P = { (CGFloat)n/(N-1), 0.0 };
+		[path lineToPoint:P];
+	}
+
+	return path;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

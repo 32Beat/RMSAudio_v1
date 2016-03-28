@@ -22,6 +22,9 @@
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
+- (size_t) sampleCount;
+- (CGPoint) pointAtIndex:(size_t)n;
+
 - (NSBezierPath *) resultPath;
 
 

@@ -111,7 +111,7 @@ static double ComputeError(double a, float *srcPtr)
 		
 		double E = ComputeError(a, &srcPtr[n]);
 		
-		mE[mN] += 0.0001 * (E - mE[mN]);
+		mE[mN] += 0.00001 * (E - mE[mN]);
 		
 		mN += 31;
 		mN &= (kRMSSplineErrorCount-1);
@@ -205,9 +205,6 @@ static double ComputeError(double a, float *srcPtr)
 - (double) optimum
 { return mMinX; }
 
-- (double) errorAtIndex:(int)n
-{ return mE[n] / mMaxE; }
-
 - (double) slopeAtIndex:(int)n
 { return (mE[n]-mE[n-1]) / mMaxE; }
 
@@ -224,6 +221,9 @@ static double ComputeError(double a, float *srcPtr)
 
 - (size_t) errorCount
 { return kRMSSplineErrorCount; }
+
+- (double) errorAtIndex:(int)n
+{ return mMaxE > 0.0 ? mE[n] / mMaxE : 0.0; }
 
 ////////////////////////////////////////////////////////////////////////////////
 

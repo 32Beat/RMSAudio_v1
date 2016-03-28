@@ -18,10 +18,8 @@
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
+- (size_t) errorCount;
+- (double) errorAtIndex:(int)n;
 - (double) optimum;
-- (NSBezierPath *) createErrorPath;
-- (NSBezierPath *) createSlopePath;
-
-//- (NSBitmapImageRep *) imageRepWithGain:(UInt32)a;
 
 @end

@@ -17,10 +17,8 @@ float gSINn[kRMSLissajousAngleCount];
 {
 	RMSPhaseMonitor *mPhaseMonitor;
 	
-	uint64_t mIndex;
-	uint64_t mCount;
-	float mL[kRMSLissajousCount];
-	float mR[kRMSLissajousCount];
+	float mL[2];
+	float mR[2];
 	
 	float mFilterValue;
 	float mLf;
@@ -31,8 +29,8 @@ float gSINn[kRMSLissajousAngleCount];
 	
 	float mA[kRMSLissajousAngleCount];
 	
-	
-	
+	NSPoint mP[kRMSLissajousCount];
+	size_t mCount;
 }
 
 
@@ -45,6 +43,22 @@ float gSINn[kRMSLissajousAngleCount];
 #define HSB(h, s, b) \
 [NSColor colorWithCalibratedHue:h/360.0 saturation:s brightness:b alpha:1.0]
 
+static double CGPointVectorLength(CGPoint P)
+{ return sqrt(P.x*P.x+P.y*P.y); }
+
+static CGPoint CGPointAdjustForDisplay(CGPoint P)
+{
+	double L = P.x*P.x+P.y*P.y;
+	if (L > 0.0)
+	{
+		double S = pow(L, -0.25);
+		P.x *= S;
+		P.y *= S;
+	}
+	
+	return P;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSLissajousView
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,38 +70,6 @@ float gSINn[kRMSLissajousAngleCount];
 		double a = M_PI * (-1.0 + 2.0 * n / kRMSLissajousAngleCount);
 		gCOSn[n] = cos(a);
 		gSINn[n] = sin(a);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (float)correlationValue
-{ return self.correlation; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) setFilter:(float)value
-{
-	mFilterValue = value*value;
-}
-
-- (void) setDuration:(float)value
-{
-	if (value > 1.0) value = 1.0;
-	[self setCount:value * kRMSLissajousCount];
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-- (void) setCount:(size_t)count
-{
-	if (count == 0)
-	{ count = 4; }
-	
-	if (mCount != count)
-	{
-		mCount = count;
-		[self triggerUpdate];
 	}
 }
 
@@ -110,11 +92,13 @@ double computeAvg(float *srcPtr, size_t n)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 - (void) prepareSamples
 {
-	double avgL = computeAvg(mL, mCount);
-	double avgR = computeAvg(mR, mCount);
+	float avgL = 0.0;
+	float avgR = 0.0;
+	vDSP_rmsqv(mL, 1, &avgL, n);
+	vDSP_rmsqv(mR, 1, &avgR, n);
 	
 	double A = sqrt(0.5 * (avgL*avgL+avgR*avgR));
 	
@@ -129,7 +113,7 @@ double computeAvg(float *srcPtr, size_t n)
 	vDSP_vsmul(mL, 1, &scaleL, mL, 1, mCount);
 	vDSP_vsmul(mR, 1, &scaleR, mR, 1, mCount);
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
@@ -139,15 +123,26 @@ double computeAvg(float *srcPtr, size_t n)
 	
 	[mPhaseMonitor updateWithSampleMonitor:sampleMonitor];
 	
-	NSBezierPath *phasePath = [mPhaseMonitor resultPath];
+	size_t N = mPhaseMonitor.sampleCount;
+	for (int n=0; n!=N; n++)
+	{ mP[n] = [mPhaseMonitor pointAtIndex:n]; }
+	
+	
 	self.correlation = mPhaseMonitor.correlation;
 	self.correlationL = mPhaseMonitor.correlationL;
 	self.correlationR = mPhaseMonitor.correlationR;
+
+//	NSBezierPath *phasePath = [mPhaseMonitor resultPath];
+	NSString *labelText = [NSString stringWithFormat:@"%.1f", self.correlation];
 	
+	size_t phaseCount = N;
 	dispatch_async(dispatch_get_main_queue(),
 	^{
-		self.phasePath = phasePath;
+		mCount = phaseCount;
+		//self.phasePath = phasePath;
 		[self setNeedsDisplay:YES];
+		
+		self.label.stringValue = labelText;
 	});
 }
 
@@ -320,7 +315,8 @@ double computeAvg(float *srcPtr, size_t n)
 	
 
 	[HSB(60.0, 0.25, 1.0) set];
-	[self drawPath:self.phasePath];
+//	[self drawPath:self.phasePath];
+	[self drawStar];
 
 	[HSB(240.0, 0.5, 1.0) set];
 //	[self drawPath:self.anglePath];
@@ -443,6 +439,23 @@ double computeAvg(float *srcPtr, size_t n)
 	B.origin.x = -(floor(x)+0.5);
 	B.origin.y = -(floor(y)+0.5);
 	self.bounds = B;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+- (void) drawStar
+{
+	NSRect B = self.bounds;
+	CGFloat S = 0.707 * 0.5 * MIN(B.size.width, B.size.height);
+	
+	size_t N = mCount;
+	for (int n=0; n!=N; n++)
+	{
+		CGPoint P = CGPointAdjustForDisplay(mP[n]);
+		P.x *= S;
+		P.y *= S;
+		[NSBezierPath strokeLineFromPoint:CGPointZero toPoint:P];
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
