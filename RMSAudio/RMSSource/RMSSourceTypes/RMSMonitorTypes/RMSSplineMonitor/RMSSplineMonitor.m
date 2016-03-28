@@ -15,7 +15,7 @@
 #define kRMSSplineMonitorCount 	2048
 
 // Number of error bins
-#define kRMSSplineErrorCount 	32
+#define kRMSSplineErrorCount 	16
 
 
 @interface RMSSplineMonitor ()
@@ -111,7 +111,7 @@ static double ComputeError(double a, float *srcPtr)
 		
 		double E = ComputeError(a, &srcPtr[n]);
 		
-		mE[mN] += 0.00001 * (E - mE[mN]);
+		mE[mN] += 0.0001 * (E - mE[mN]);
 		
 		mN += 31;
 		mN &= (kRMSSplineErrorCount-1);

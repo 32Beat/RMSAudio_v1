@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		7F247D051CA2CC860086F21B /* RMSPhaseMonitor.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F247D061CA2CC860086F21B /* RMSPhaseMonitor.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */; };
+		7F43CC951CA8E66D00F93185 /* RMSSplineMonitorController.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F43CC931CA8E66D00F93185 /* RMSSplineMonitorController.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		7F43CC961CA8E66D00F93185 /* RMSSplineMonitorController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F43CC941CA8E66D00F93185 /* RMSSplineMonitorController.m */; };
 		7F4F7F1B1CA42C30007E7655 /* RMSOscilloscopeView.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F4F7F191CA42C30007E7655 /* RMSOscilloscopeView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7F4F7F1C1CA42C30007E7655 /* RMSOscilloscopeView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F4F7F1A1CA42C30007E7655 /* RMSOscilloscopeView.m */; };
 		7F8BF9E11C9EF8AF0064F2EE /* RMSSampleMonitorView.h in Headers */ = {isa = PBXBuildFile; fileRef = 7F8BF9DF1C9EF8AF0064F2EE /* RMSSampleMonitorView.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -102,6 +104,8 @@
 /* Begin PBXFileReference section */
 		7F247D031CA2CC860086F21B /* RMSPhaseMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSPhaseMonitor.h; sourceTree = "<group>"; };
 		7F247D041CA2CC860086F21B /* RMSPhaseMonitor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RMSPhaseMonitor.m; sourceTree = "<group>"; };
+		7F43CC931CA8E66D00F93185 /* RMSSplineMonitorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSSplineMonitorController.h; sourceTree = "<group>"; };
+		7F43CC941CA8E66D00F93185 /* RMSSplineMonitorController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RMSSplineMonitorController.m; sourceTree = "<group>"; };
 		7F4F7F191CA42C30007E7655 /* RMSOscilloscopeView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSOscilloscopeView.h; sourceTree = "<group>"; };
 		7F4F7F1A1CA42C30007E7655 /* RMSOscilloscopeView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RMSOscilloscopeView.m; sourceTree = "<group>"; };
 		7F8BF9DF1C9EF8AF0064F2EE /* RMSSampleMonitorView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RMSSampleMonitorView.h; sourceTree = "<group>"; };
@@ -214,6 +218,16 @@
 			path = RMSPhaseMonitor;
 			sourceTree = "<group>";
 		};
+		7F43CC921CA8E66D00F93185 /* RMSControllers */ = {
+			isa = PBXGroup;
+			children = (
+				7F43CC931CA8E66D00F93185 /* RMSSplineMonitorController.h */,
+				7F43CC941CA8E66D00F93185 /* RMSSplineMonitorController.m */,
+			);
+			name = RMSControllers;
+			path = RMSUtilities/RMSControllers;
+			sourceTree = "<group>";
+		};
 		7F90E8AA1C922801008B8D75 = {
 			isa = PBXGroup;
 			children = (
@@ -238,6 +252,7 @@
 				7F90E8CB1C922B8B008B8D75 /* RMSMisc */,
 				7F90E9131C922B8B008B8D75 /* RMSSource */,
 				7F90E9181C922B8B008B8D75 /* RMSUtilities */,
+				7F43CC921CA8E66D00F93185 /* RMSControllers */,
 				7F90E9251C922B8B008B8D75 /* RMSViews */,
 			);
 			path = RMSAudio;
@@ -533,6 +548,7 @@
 				7F90E9561C922B8B008B8D75 /* RMSMixerSource.h in Headers */,
 				7F90E9521C922B8B008B8D75 /* RMSVolume.h in Headers */,
 				7F90E9611C922B8B008B8D75 /* RMSSplineMonitor.h in Headers */,
+				7F43CC951CA8E66D00F93185 /* RMSSplineMonitorController.h in Headers */,
 				7F90E93A1C922B8B008B8D75 /* RMSAudioUnitFilePlayer.h in Headers */,
 				7F90E9711C922B8B008B8D75 /* RMSSplineMonitorView.h in Headers */,
 				7F90E92D1C922B8B008B8D75 /* rmsoscillator_t.h in Headers */,
@@ -651,6 +667,7 @@
 				7F90E9701C922B8B008B8D75 /* RMSResultView.m in Sources */,
 				7F90E92F1C922B8B008B8D75 /* RMSRingBuffer.m in Sources */,
 				7F90E9371C922B8B008B8D75 /* RMSSource.m in Sources */,
+				7F43CC961CA8E66D00F93185 /* RMSSplineMonitorController.m in Sources */,
 				7F90E9681C922B8B008B8D75 /* PCMAudioUtilities.m in Sources */,
 				7F90E9721C922B8B008B8D75 /* RMSSplineMonitorView.m in Sources */,
 				7F8BF9E61C9F0BC80064F2EE /* RMSSpectrumView.m in Sources */,

@@ -25,10 +25,12 @@ rmsbuffer_t RMSBufferBegin(size_t maxSampleCount)
 	while (sampleCount < maxSampleCount)
 	{ sampleCount <<= 1; }
 	
-	return (rmsbuffer_t){
+	return (rmsbuffer_t)
+	{
 		.index = 0,
 		.indexMask = sampleCount-1,
-		.sampleData = calloc(sampleCount, sizeof(float)) };
+		.sampleData = calloc(sampleCount, sizeof(float))
+	};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

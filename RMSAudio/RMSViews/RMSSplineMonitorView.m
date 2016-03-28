@@ -33,17 +33,20 @@
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
 	if (mSplineMonitor == nil || mReset)
-	{ mSplineMonitor = [RMSSplineMonitor new]; mReset = NO; }
+	{
+		mSplineMonitor = [RMSSplineMonitor new];
+		mReset = NO;
+	}
 	
 	[mSplineMonitor updateWithSampleMonitor:sampleMonitor];
 
-	self.optimum = mSplineMonitor.optimum;
-
 	NSBezierPath *path = [mSplineMonitor createErrorPath];
+	double optimum = mSplineMonitor.optimum;
 
 	dispatch_async(dispatch_get_main_queue(),
 	^{
 		self.errorPath = path;
+		self.optimum = optimum;
 		[self setNeedsDisplay:YES];
 	});
 }
