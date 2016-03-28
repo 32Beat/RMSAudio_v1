@@ -15,7 +15,7 @@
 #define kRMSSplineMonitorCount 	2048
 
 // Number of error bins
-#define kRMSSplineErrorCount 	16
+#define kRMSSplineErrorCount 	32
 
 
 @interface RMSSplineMonitor ()

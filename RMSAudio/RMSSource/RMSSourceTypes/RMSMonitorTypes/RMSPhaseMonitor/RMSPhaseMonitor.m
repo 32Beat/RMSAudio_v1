@@ -49,10 +49,13 @@
 	double L = mL[n];
 	double R = mR[n];
 
-	double d = sqrt(0.5 * (L*L+R*R));
-	d = d > 0.0 ? 0.5 * pow(d, 0.5)/d : 0.5;
-	L *= d;
-	R *= d;
+	double d = 0.5 * (L*L+R*R);
+	if (d > 0.0)
+	{
+		d = pow(d, -0.25);
+		L *= d;
+		R *= d;
+	}
 	
 	return (CGPoint){ R-L, R+L };
 }

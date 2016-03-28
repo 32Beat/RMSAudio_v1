@@ -43,15 +43,13 @@ float gSINn[kRMSLissajousAngleCount];
 #define HSB(h, s, b) \
 [NSColor colorWithCalibratedHue:h/360.0 saturation:s brightness:b alpha:1.0]
 
-static double CGPointVectorLength(CGPoint P)
-{ return sqrt(P.x*P.x+P.y*P.y); }
 
 static CGPoint CGPointAdjustForDisplay(CGPoint P)
 {
 	double L = P.x*P.x+P.y*P.y;
 	if (L > 0.0)
 	{
-		double S = pow(L, -0.25);
+		double S = pow(0.5*L, -0.25);
 		P.x *= S;
 		P.y *= S;
 	}
@@ -124,6 +122,7 @@ double computeAvg(float *srcPtr, size_t n)
 	[mPhaseMonitor updateWithSampleMonitor:sampleMonitor];
 	
 	size_t N = mPhaseMonitor.sampleCount;
+	
 	for (int n=0; n!=N; n++)
 	{ mP[n] = [mPhaseMonitor pointAtIndex:n]; }
 	
@@ -451,7 +450,7 @@ double computeAvg(float *srcPtr, size_t n)
 	size_t N = mCount;
 	for (int n=0; n!=N; n++)
 	{
-		CGPoint P = CGPointAdjustForDisplay(mP[n]);
+		CGPoint P = mP[n];
 		P.x *= S;
 		P.y *= S;
 		[NSBezierPath strokeLineFromPoint:CGPointZero toPoint:P];

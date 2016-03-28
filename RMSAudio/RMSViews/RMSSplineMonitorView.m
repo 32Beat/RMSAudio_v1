@@ -25,11 +25,39 @@
 ////////////////////////////////////////////////////////////////////////////////
 @implementation RMSSplineMonitorView
 ////////////////////////////////////////////////////////////////////////////////
+/*
+	This is called on main in response to user interaction.
+	We will just set a flag for the background process to update accordingly.
+
+	This probably is the suggested approach for all parameter changes.
+
+	1. set the parameters
+	2. let the background process compare the modelstate vs the parameters and
+	update the model if necessary
+	3. copy model results to the mainthread for displaying
+
+	This seems slightly easier to implement in a separate controller object
+*/
 
 - (void) reset
 { mReset = YES; }
 
 ////////////////////////////////////////////////////////////////////////////////
+/*	
+	updateWithSampleMonitor
+	-----------------------
+	This is called from a concurrent background thread (not the audiothread).
+	The audiothread may be updating the ringbuffers in the sampleMonitor 
+	but the latest simultaneous index for left & right is available thru
+	
+	sampleMonitor->maxIndex
+	
+	Given a long enough ringbuffer, there should be ample headroom to traverse
+	the most recent samples up to maxIndex.
+	
+	In this case we merely operate on the latest 2048 samples which more or less
+	corresponds with the update frequency @ 44.1kHz
+*/
 
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor
 {
@@ -44,7 +72,40 @@
 	[mSplineMonitor updateWithSampleMonitor:sampleMonitor];
 
 	// recreate or update resultPath accordingly
+	NSBezierPath *path = [self updateErrorPath];
+	
+	// optimum x location for minimum error
+	double optimum = mSplineMonitor.optimum;
+	
+	// show optimum as label text
+	NSString *text = [NSString stringWithFormat:@"%.3f", optimum];
+
+	// transfer to UI on main
+	dispatch_async(dispatch_get_main_queue(),
+	^{
+		self.resultPath = path;
+		self.optimum = optimum;
+		[self setNeedsDisplay:YES];
+
+		self.label.stringValue = text;
+	});
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+	The splineMonitor stores errors over errorCount bins. 
+	Here we create a bezierpath once with errorCount points,
+	and update the points on each iteration. 
+	
+	The path ptr is then copied to a block for processing on main.
+	This means that the mErrorPath ptr can be reset in the background 
+	if necessary. Updating the points while the path is being drawn, 
+	is harmless with regards to threadingissues.
+*/
+- (NSBezierPath *) updateErrorPath
+{
 	size_t N = mSplineMonitor.errorCount;
+	
 	if (mErrorPath == nil || mErrorPath.elementCount != N)
 	{ mErrorPath = [self bezierPathWithPointCount:N]; }
 	
@@ -54,22 +115,8 @@
 		[mSplineMonitor errorAtIndex:n] };
 		[mErrorPath setAssociatedPoints:&P atIndex:n];
 	}
-
-	// transfer from background to main
-	NSBezierPath *path = mErrorPath;
-	// optimum x location for minimum error
-	double optimum = mSplineMonitor.optimum;
-	NSString *text = [NSString stringWithFormat:@"%.3f", optimum];
-
-	// update UI on main
-	dispatch_async(dispatch_get_main_queue(),
-	^{
-		self.resultPath = path;
-		self.optimum = optimum;
-		[self setNeedsDisplay:YES];
-
-		self.label.stringValue = text;
-	});
+	
+	return mErrorPath;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

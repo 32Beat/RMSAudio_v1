@@ -23,6 +23,7 @@
 @class RMSSampleMonitor;
 
 @protocol RMSSampleMonitorObserverProtocol <NSObject>
+- (BOOL) active;
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 @end
 

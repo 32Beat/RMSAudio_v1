@@ -197,13 +197,21 @@ static OSStatus renderCallback(
 #pragma mark
 ////////////////////////////////////////////////////////////////////////////////
 
+- (BOOL) validateObserver:(id<RMSSampleMonitorObserverProtocol>)observer
+{
+	return observer != nil &&
+	[observer respondsToSelector:@selector(updateWithSampleMonitor:)];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 - (void) addObserver:(id<RMSSampleMonitorObserverProtocol>)observer
 {
 	if (mObservers == nil)
 	{ mObservers = [NSMutableArray new]; }
 	
-	if (observer &&
-	[observer respondsToSelector:@selector(updateWithSampleMonitor:)])
+	if ([self validateObserver:observer] &&
+	[mObservers indexOfObjectIdenticalTo:observer] == NSNotFound)
 	{ [mObservers addObject:observer]; }
 }
 

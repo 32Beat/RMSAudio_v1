@@ -14,6 +14,8 @@
 @interface RMSSplineMonitorController : NSObject
 <RMSSampleMonitorObserverProtocol>
 
+@property (nonatomic, assign) BOOL active;
+
 - (void) reset;
 - (void) updateWithSampleMonitor:(RMSSampleMonitor *)sampleMonitor;
 
